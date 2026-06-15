@@ -338,7 +338,7 @@ async function saveItem() {
   if (!name)                              { showToast('Item name is required', 'error'); return; }
   if (!category)                          { showToast('Category is required', 'error'); return; }
   if (!priceStr || isNaN(parseFloat(priceStr))) { showToast('Valid price required', 'error'); return; }
-  const id      = editingId || 'item_' + Date.now();
+  const id      = editingId || 'item_' + name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '') + '_' + Date.now().toString().slice(-4);
   const image   = currentImageBase64 || urlField || '';
   const itemData = {
     id, name, category,
