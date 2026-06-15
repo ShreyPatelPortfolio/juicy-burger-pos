@@ -1,14 +1,10 @@
 // db.js — The Juicy Burger
-// Google Sheets backend via Apps Script Web App.
-// ---------------------------------------------------------------
-// SETUP: Paste your Apps Script Web App URL below.
+// Menu actions → GET (fixes CORS for menu edits)
+// Order actions → POST (orders are large payloads, POST is reliable)
 // ---------------------------------------------------------------
 
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyfdpm8iUpdBuTb5xPswBM-l2DBxNS7w8k2E3fb5SAsVNaGnMix42us8DjSab1jBRCR/exec"; // ← Paste your Web App URL here
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyfdpm8iUpdBuTb5xPswBM-l2DBxNS7w8k2E3fb5SAsVNaGnMix42us8DjSab1jBRCR/exec";
 
-// ---------------------------------------------------------------
-// Tax rates (Ontario, Canada)
-// ---------------------------------------------------------------
 const GST_RATE = 0.05;
 const PST_RATE = 0.08;
 
@@ -43,23 +39,20 @@ function showToast(msg, type = '') {
   setTimeout(() => toast.remove(), 3500);
 }
 
-// ---------------------------------------------------------------
-// DB — thin wrapper around the Apps Script Web App
-// Falls back to localStorage if SCRIPT_URL is not set.
-// ---------------------------------------------------------------
 const DB = {
   _ready: !!SCRIPT_URL,
 
-  // ---- Internal fetch helpers --------------------------------
+  // GET — used for menu actions (small payloads, needs CORS fix)
   async _get(params) {
     if (!this._ready) return null;
     const url = SCRIPT_URL + '?' + new URLSearchParams(params).toString();
-    const res = await fetch(url);
+    const res  = await fetch(url);
     const json = await res.json();
     if (json.error) throw new Error(json.error);
     return json;
   },
 
+  // POST — used for order actions (large payloads, POST handles them fine)
   async _post(body) {
     if (!this._ready) return null;
     const res = await fetch(SCRIPT_URL, {
@@ -71,17 +64,15 @@ const DB = {
     return json;
   },
 
-  // ---- Public API (mirrors the old Firebase DB wrapper) ------
-
-  // Save/replace a full order or menu item by path
   async set(path, value) {
     if (!this._ready) { this._lsSet(path, value); this._emit(path, value); return; }
     const parts = path.split('/');
+    // Menu → GET (fixes CORS block on menu saves)
     if (parts[0] === 'menu')   return this._get({ action: 'setMenuItem', item: JSON.stringify(value) });
-    if (parts[0] === 'orders') return this._get({ action: 'setOrder',    order: JSON.stringify(value) });
+    // Orders → POST (payload too large for GET URL limit)
+    if (parts[0] === 'orders') return this._post({ action: 'setOrder', order: value });
   },
 
-  // Merge fields into an existing order
   async update(path, fields) {
     if (!this._ready) {
       const existing = this._lsGet(path) || {};
@@ -91,11 +82,12 @@ const DB = {
       return;
     }
     const parts = path.split('/');
-    if (parts[0] === 'orders') return this._get({ action: 'updateOrder', id: parts[1], fields: JSON.stringify(fields) });
+    // Order status/payment updates → POST
+    if (parts[0] === 'orders') return this._post({ action: 'updateOrder', id: parts[1], fields });
+    // Menu item updates (e.g. toggle available) → GET
     if (parts[0] === 'menu')   return this._get({ action: 'setMenuItem', item: JSON.stringify({ id: parts[1], ...fields }) });
   },
 
-  // One-time fetch
   async get(path) {
     if (!this._ready) return this._lsGet(path);
     const parts = path.split('/');
@@ -104,7 +96,6 @@ const DB = {
     return null;
   },
 
-  // Polling listener — calls callback(data) immediately and every 5s
   on(path, callback) {
     const fetchAndCall = async () => {
       try {
@@ -115,9 +106,7 @@ const DB = {
         callback(this._lsGetAll(path) || this._lsGet(path) || {});
       }
     };
-
     fetchAndCall();
-
     const interval = setInterval(fetchAndCall, 5000);
     this._intervals = this._intervals || [];
     this._intervals.push(interval);
@@ -134,10 +123,9 @@ const DB = {
     }
     const parts = path.split('/');
     if (parts[0] === 'menu')   return this._get({ action: 'deleteMenuItem', id: parts[1] });
-    if (parts[0] === 'orders') return this._get({ action: 'deleteOrder',    id: parts[1] });
+    if (parts[0] === 'orders') return this._post({ action: 'deleteOrder', id: parts[1] });
   },
 
-  // ---- localStorage fallback (demo / no URL set) -------------
   _lsKey(path)  { return 'tjb_' + path.replace(/\//g, '_'); },
   _lsSet(path, value) { localStorage.setItem(this._lsKey(path), JSON.stringify(value)); },
   _lsGet(path)  {
@@ -163,15 +151,8 @@ const DB = {
   }
 };
 
-// ---------------------------------------------------------------
-// Seed default menu on first load if sheet is empty
-// ---------------------------------------------------------------
 async function seedMenuIfEmpty() {
-  if (!DB._ready) {
-    const menu = DB._lsGet('menu');
-    if (menu && Object.keys(menu).length) return;
-    return;
-  }
+  if (!DB._ready) return;
   try {
     await DB._get({ action: 'seedMenu' });
   } catch(e) {
@@ -179,11 +160,8 @@ async function seedMenuIfEmpty() {
   }
 }
 
-// ---------------------------------------------------------------
-// No-op — kept so pages that call initFirebase() don't break
-// ---------------------------------------------------------------
 function initFirebase() {
   if (!SCRIPT_URL) {
-    console.warn('No SCRIPT_URL set in db.js — running in localStorage demo mode (single tab only).');
+    console.warn('No SCRIPT_URL set in db.js — running in localStorage demo mode.');
   }
 }
