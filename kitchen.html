@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kitchen Display — The Juicy Burger</title>
+<link rel="stylesheet" href="style.css">
+<style>
+.kitchen-layout { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+
+.stats-bar {
+  background: #160700; border-bottom: 1px solid var(--border);
+  padding: 0.5rem 1.25rem; display: flex; gap: 2rem; align-items: center;
+  font-size: 0.82rem; flex-shrink: 0; overflow-x: auto;
+}
+.stat-item { display: flex; align-items: center; gap: 0.5rem; white-space: nowrap; }
+.stat-val { font-weight: 700; }
+.stat-val.orange { color: var(--brand-amber); }
+.stat-val.blue { color: #6db8e8; }
+.stat-val.green { color: #5dde8e; }
+
+.kitchen-board { flex: 1; overflow-y: auto; padding: 1.25rem; }
+.board-columns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; min-height: 100%; align-items: start; }
+
+.col-header {
+  padding: 0.55rem 1rem; border-radius: var(--radius-md); text-align: center;
+  font-size: 0.72rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+  margin-bottom: 0.75rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+}
+.col-header.pending  { background: rgba(243,156,18,0.12); color: #f5b942; border: 1px solid rgba(243,156,18,0.25); }
+.col-header.prepping { background: rgba(52,152,219,0.12); color: #6db8e8; border: 1px solid rgba(52,152,219,0.25); }
+.col-header.done     { background: rgba(46,204,113,0.12); color: #5dde8e; border: 1px solid rgba(46,204,113,0.25); }
+.count-badge { background: rgba(255,255,255,0.12); border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; }
+.board-col { display: flex; flex-direction: column; gap: 0.875rem; }
+
+.order-ticket { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; animation: ticketIn 0.2s ease; }
+@keyframes ticketIn { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }
+.order-ticket.pending  { border-left: 3px solid var(--warning); }
+.order-ticket.prepping { border-left: 3px solid var(--info); }
+.order-ticket.done     { border-left: 3px solid var(--success); opacity: 0.65; }
+
+.ticket-header { padding: 0.7rem 1rem; background: #1a0a00; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); }
+.ticket-order-id { font-weight: 700; font-size: 0.9rem; }
+.ticket-time { font-size: 0.7rem; color: var(--text-muted); margin-top: 2px; }
+.ticket-items { padding: 0.625rem 1rem; }
+.ticket-line { padding: 0.45rem 0; border-bottom: 1px solid var(--border); font-size: 0.875rem; }
+.ticket-line:last-child { border-bottom: none; }
+.ticket-line-top { display: flex; align-items: center; gap: 0.4rem; }
+.ticket-line-name { font-weight: 600; }
+.ticket-line-qty { background: var(--brand-orange); color: #fff; font-size: 0.7rem; font-weight: 700; padding: 1px 7px; border-radius: 20px; }
+.ticket-line-mods { font-size: 0.72rem; color: var(--danger); margin-top: 0.15rem; }
+.ticket-line-note { font-size: 0.72rem; color: var(--text-muted); margin-top: 0.1rem; }
+.ticket-footer { padding: 0.625rem 1rem; border-top: 1px solid var(--border); }
+.ticket-payment { font-size: 0.75rem; margin-bottom: 0.3rem; }
+.ticket-total { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.5rem; }
+.ticket-actions { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+
+.elapsed { font-size: 0.68rem; font-weight: 700; padding: 2px 8px; border-radius: 20px; letter-spacing: 0.5px; white-space: nowrap; }
+.elapsed.normal  { background: rgba(46,204,113,0.15); color: #5dde8e; }
+.elapsed.medium  { background: rgba(243,156,18,0.15); color: #f5b942; }
+.elapsed.urgent  { background: rgba(231,76,60,0.2); color: #f1705e; animation: pulse 1s infinite; }
+@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
+
+.empty-col { text-align: center; color: var(--text-dim); font-size: 0.8rem; padding: 2rem 0.5rem; }
+
+@media (max-width: 900px) { .board-columns { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 600px) { .board-columns { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="kitchen-layout">
+  <header class="site-header">
+    <a href="index.html" class="logo">🍔 The Juicy Burger</a>
+    <div style="display:flex;align-items:center;gap:0.75rem;">
+      <span class="status-dot online" id="connDot"></span>
+      <span style="font-size:0.78rem;color:var(--text-muted)" id="connLabel">Live</span>
+      <span class="terminal-label" style="background:#3498db;">Kitchen</span>
+    </div>
+  </header>
+
+  <div class="stats-bar">
+    <div class="stat-item">⏳ <span class="stat-val orange" id="statPending">0</span> Pending</div>
+    <div class="stat-item">🔥 <span class="stat-val blue" id="statPrepping">0</span> Prepping</div>
+    <div class="stat-item">✅ <span class="stat-val green" id="statDone">0</span> Done</div>
+    <div class="stat-item" style="margin-left:auto;">
+      <span style="font-size:0.72rem;color:var(--text-dim);" id="refreshDot">●</span>
+      <span style="color:var(--text-dim);font-size:0.72rem;">auto-sync</span>
+    </div>
+  </div>
+
+  <div class="kitchen-board">
+    <div class="board-columns">
+      <div>
+        <div class="col-header pending">⏳ New Orders <span class="count-badge" id="pendingCount">0</span></div>
+        <div class="board-col" id="pendingCol"><div class="empty-col">No pending orders</div></div>
+      </div>
+      <div>
+        <div class="col-header prepping">🔥 Prepping <span class="count-badge" id="preppingCount">0</span></div>
+        <div class="board-col" id="preppingCol"><div class="empty-col">Nothing in prep</div></div>
+      </div>
+      <div>
+        <div class="col-header done">✅ Done <span class="count-badge" id="doneCount">0</span></div>
+        <div class="board-col" id="doneCol"><div class="empty-col">No completed orders</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script src="db.js"></script>
+<script>
+let allOrders = {};
+let prevOrderIds = new Set();
+
+window.addEventListener('DOMContentLoaded', () => {
+  initFirebase();
+  DB.on('orders', (data) => {
+    const incoming = data || {};
+    const newIds = Object.keys(incoming).filter(id => !prevOrderIds.has(id));
+    if (newIds.length && prevOrderIds.size > 0) {
+      newIds.forEach(id => showToast('🔔 New order: ' + id, 'success'));
+    }
+    prevOrderIds = new Set(Object.keys(incoming));
+    allOrders = incoming;
+    renderBoard();
+
+    // Blink sync dot
+    const dot = document.getElementById('refreshDot');
+    dot.style.color = 'var(--brand-orange)';
+    setTimeout(() => dot.style.color = 'var(--text-dim)', 400);
+  });
+
+  setInterval(updateTimers, 20000);
+});
+
+function renderBoard() {
+  const pending = [], prepping = [], done = [];
+  Object.values(allOrders).forEach(o => {
+    if (o.status === 'pending')       pending.push(o);
+    else if (o.status === 'prepping') prepping.push(o);
+    else if (o.status === 'done')     done.push(o);
+  });
+  const byTime = (a, b) => a.sentAt - b.sentAt;
+  pending.sort(byTime); prepping.sort(byTime); done.sort((a, b) => b.sentAt - a.sentAt);
+
+  document.getElementById('statPending').textContent  = pending.length;
+  document.getElementById('statPrepping').textContent = prepping.length;
+  document.getElementById('statDone').textContent     = done.length;
+  document.getElementById('pendingCount').textContent  = pending.length;
+  document.getElementById('preppingCount').textContent = prepping.length;
+  document.getElementById('doneCount').textContent     = done.length;
+
+  renderCol('pendingCol',  pending,          'No pending orders');
+  renderCol('preppingCol', prepping,         'Nothing in prep');
+  renderCol('doneCol',     done.slice(0,12), 'No completed orders');
+}
+
+function renderCol(colId, orders, emptyMsg) {
+  const col = document.getElementById(colId);
+  col.innerHTML = orders.length ? orders.map(renderTicket).join('') : `<div class="empty-col">${emptyMsg}</div>`;
+}
+
+function renderTicket(o) {
+  const elapsed  = getElapsedText(o.sentAt);
+  const elClass  = getElapsedClass(o.sentAt);
+  const timeStr  = new Date(o.sentAt).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+  const payBadge = o.paymentStatus === 'paid'
+    ? `<span style="color:var(--success);font-weight:600;">💳 Paid${o.paymentMethod ? ' · ' + o.paymentMethod : ''}</span>`
+    : `<span style="color:var(--warning);">⏳ Unpaid</span>`;
+  const actions  = o.status === 'pending'
+    ? `<button class="btn btn-primary btn-sm" onclick="setStatus('${o.id}','prepping')">🔥 Start Prep</button>`
+    : o.status === 'prepping'
+    ? `<button class="btn btn-success btn-sm" onclick="setStatus('${o.id}','done')">✅ Done</button>
+       <button class="btn btn-secondary btn-sm" onclick="setStatus('${o.id}','pending')">↩ Back</button>`
+    : `<button class="btn btn-secondary btn-sm" onclick="archiveOrder('${o.id}')">🗑 Archive</button>`;
+
+  return `<div class="order-ticket ${o.status}" id="ticket_${o.id}">
+    <div class="ticket-header">
+      <div><div class="ticket-order-id">${o.id}</div><div class="ticket-time">${timeStr}</div></div>
+      <span class="elapsed ${elClass}" data-sent="${o.sentAt}">${elapsed}</span>
+    </div>
+    <div class="ticket-items">
+      ${(o.items || []).map(line => `
+        <div class="ticket-line">
+          <div class="ticket-line-top">
+            <span class="ticket-line-name">${line.name}</span>
+            <span class="ticket-line-qty">×${line.qty}</span>
+          </div>
+          ${line.removed && line.removed.length ? `<div class="ticket-line-mods">🚫 No: ${line.removed.join(', ')}</div>` : ''}
+          ${line.note ? `<div class="ticket-line-note">📝 ${line.note}</div>` : ''}
+        </div>`).join('')}
+    </div>
+    <div class="ticket-footer">
+      <div class="ticket-payment">${payBadge}</div>
+      <div class="ticket-total">Total: <strong>${formatCAD(o.total || 0)}</strong></div>
+      <div class="ticket-actions">${actions}</div>
+    </div>
+  </div>`;
+}
+
+async function setStatus(orderId, status) {
+  try {
+    await DB.update(`orders/${orderId}`, { status });
+    showToast(`${orderId} → ${status}`, status === 'done' ? 'success' : '');
+  } catch(e) { showToast('Error: ' + e.message, 'error'); }
+}
+
+async function archiveOrder(orderId) {
+  if (!confirm('Remove this order from the board?')) return;
+  try {
+    await DB.remove(`orders/${orderId}`);
+    showToast('Order archived', '');
+  } catch(e) { showToast('Error: ' + e.message, 'error'); }
+}
+
+function getElapsedText(sentAt) {
+  const mins = Math.floor((Date.now() - sentAt) / 60000);
+  if (mins < 1) return 'Just now';
+  return mins === 1 ? '1 min' : `${mins} min`;
+}
+
+function getElapsedClass(sentAt) {
+  const mins = Math.floor((Date.now() - sentAt) / 60000);
+  if (mins < 10) return 'normal';
+  if (mins < 20) return 'medium';
+  return 'urgent';
+}
+
+function updateTimers() {
+  document.querySelectorAll('.elapsed[data-sent]').forEach(el => {
+    const sentAt = parseInt(el.dataset.sent);
+    el.textContent = getElapsedText(sentAt);
+    el.className = `elapsed ${getElapsedClass(sentAt)}`;
+  });
+}
+</script>
+</body>
+</html>

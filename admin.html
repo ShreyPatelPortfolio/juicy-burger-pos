@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Menu Manager — The Juicy Burger</title>
+<link rel="stylesheet" href="style.css">
+<style>
+.admin-layout { display: flex; flex-direction: column; min-height: 100vh; }
+.admin-content { max-width: 1100px; margin: 0 auto; padding: 1.5rem; width: 100%; }
+.page-title { font-family: 'Playfair Display', serif; color: var(--brand-amber); font-size: 1.6rem; margin-bottom: 0.2rem; }
+.page-sub { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem; }
+
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.75rem; margin-bottom: 1.5rem; }
+.stat-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 1rem; text-align: center; }
+.stat-card .sv { font-size: 1.6rem; font-weight: 700; color: var(--brand-amber); }
+.stat-card .sl { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.2rem; }
+
+.toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; gap: 1rem; flex-wrap: wrap; }
+.search-wrap { flex: 1; max-width: 300px; position: relative; }
+.search-wrap::before { content: '🔍'; position: absolute; left: 0.6rem; top: 50%; transform: translateY(-50%); font-size: 0.85rem; pointer-events: none; z-index: 1; }
+.search-wrap .form-control { padding-left: 2rem; }
+
+.menu-table { width: 100%; border-collapse: collapse; }
+.menu-table th { text-align: left; font-size: 0.72rem; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--text-dim); padding: 0.6rem 1rem; border-bottom: 1px solid var(--border); }
+.menu-table td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: middle; font-size: 0.875rem; }
+.menu-table tr:last-child td { border-bottom: none; }
+.menu-table tr:hover td { background: rgba(255,107,26,0.03); }
+
+.item-thumb { width: 50px; height: 50px; border-radius: var(--radius-sm); background: #2a1200; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; overflow: hidden; flex-shrink: 0; }
+.item-thumb img { width: 100%; height: 100%; object-fit: cover; border-radius: var(--radius-sm); }
+.table-name { font-weight: 600; }
+.table-desc { font-size: 0.72rem; color: var(--text-muted); margin-top: 0.15rem; max-width: 260px; }
+.row-actions { display: flex; gap: 0.4rem; justify-content: flex-end; }
+
+.ing-tags { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.5rem; }
+.ing-tag { background: var(--bg-card); border: 1px solid var(--border); border-radius: 20px; padding: 2px 8px; font-size: 0.7rem; color: var(--text-muted); display: flex; align-items: center; gap: 4px; }
+.ing-remove { background: none; border: none; color: var(--danger); font-size: 0.9rem; cursor: pointer; padding: 0; line-height: 1; }
+
+.img-upload-area { border: 2px dashed var(--border); border-radius: var(--radius-md); padding: 1.25rem; text-align: center; cursor: pointer; transition: border-color 0.15s; position: relative; color: var(--text-muted); font-size: 0.85rem; }
+.img-upload-area:hover { border-color: var(--brand-orange); }
+.img-upload-area input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.img-preview { width: 100%; max-height: 150px; object-fit: cover; border-radius: var(--radius-sm); margin-top: 0.75rem; }
+
+@media (max-width: 768px) {
+  .menu-table th:nth-child(3), .menu-table td:nth-child(3),
+  .menu-table th:nth-child(4), .menu-table td:nth-child(4) { display: none; }
+}
+</style>
+</head>
+<body>
+<div class="admin-layout">
+  <header class="site-header">
+    <a href="index.html" class="logo">🍔 The Juicy Burger</a>
+    <div style="display:flex;align-items:center;gap:0.75rem;">
+      <span class="status-dot online"></span>
+      <span class="terminal-label" style="background:#8e44ad;">Menu Manager</span>
+    </div>
+  </header>
+
+  <div class="admin-content">
+    <div class="page-title">Menu Manager</div>
+    <div class="page-sub">Add, edit, or remove items. Changes sync to all terminals instantly.</div>
+
+    <div class="stats-grid">
+      <div class="stat-card"><div class="sv" id="statTotal">—</div><div class="sl">Total Items</div></div>
+      <div class="stat-card"><div class="sv" id="statAvail">—</div><div class="sl">Available</div></div>
+      <div class="stat-card"><div class="sv" id="statCats">—</div><div class="sl">Categories</div></div>
+    </div>
+
+    <div class="toolbar">
+      <div class="search-wrap">
+        <input type="text" class="form-control" id="searchInput" placeholder="Search items…" oninput="renderTable()">
+      </div>
+      <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
+        <select class="form-control" id="catFilter" onchange="renderTable()" style="width:auto;">
+          <option value="">All Categories</option>
+        </select>
+        <button class="btn btn-primary" onclick="openAddModal()">+ Add Item</button>
+      </div>
+    </div>
+
+    <div class="card" style="overflow-x:auto;padding:0;">
+      <table class="menu-table">
+        <thead>
+          <tr>
+            <th style="width:62px;"></th>
+            <th>Item</th>
+            <th>Category</th>
+            <th>Price</th>
+            <th>Available</th>
+            <th style="text-align:right;">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="menuBody">
+          <tr><td colspan="6" style="text-align:center;color:var(--text-dim);padding:2rem;">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Add / Edit Modal -->
+<div class="modal-overlay hidden" id="itemModal">
+  <div class="modal-box" style="max-width:520px;">
+    <div class="modal-title" id="modalTitle">Add Menu Item</div>
+
+    <div class="form-group">
+      <label class="form-label">Item Name *</label>
+      <input type="text" class="form-control" id="fieldName" placeholder="e.g. Classic Smash Burger">
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+      <div class="form-group">
+        <label class="form-label">Category *</label>
+        <select class="form-control" id="fieldCategory" onchange="handleCatSelect(this)">
+          <option value="">Select…</option>
+          <option>Burgers</option>
+          <option>Sides</option>
+          <option>Drinks</option>
+          <option>Desserts</option>
+          <option>Specials</option>
+          <option value="__new__">+ New category…</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Price (CAD) *</label>
+        <input type="number" class="form-control" id="fieldPrice" placeholder="0.00" step="0.01" min="0">
+      </div>
+    </div>
+
+    <div class="form-group hidden" id="newCatGroup">
+      <label class="form-label">New Category Name</label>
+      <input type="text" class="form-control" id="fieldCategoryNew" placeholder="e.g. Breakfast">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Description</label>
+      <textarea class="form-control" id="fieldDesc" placeholder="Short description of the item…"></textarea>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Ingredients</label>
+      <div style="display:flex;gap:0.5rem;">
+        <input type="text" class="form-control" id="newIngInput" placeholder="Add ingredient…" onkeydown="if(event.key==='Enter'){event.preventDefault();addIngredient();}">
+        <button class="btn btn-secondary" onclick="addIngredient()" type="button">Add</button>
+      </div>
+      <div class="ing-tags" id="ingTags"></div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Item Image</label>
+      <div class="img-upload-area" id="uploadArea">
+        <input type="file" accept="image/*" onchange="handleImageFile(this)">
+        <div id="uploadLabel">📷 Click or drag to upload image</div>
+        <img class="img-preview hidden" id="imgPreview" alt="preview">
+      </div>
+      <div style="margin-top:0.5rem;">
+        <input type="text" class="form-control" id="fieldImageUrl" placeholder="Or paste image URL…" oninput="previewUrl(this.value)">
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveItem()">Save Item</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script src="db.js"></script>
+<script>
+let menuItems = {};
+let editingId = null;
+let currentIngredients = [];
+let currentImageBase64 = '';
+
+window.addEventListener('DOMContentLoaded', () => {
+  initFirebase();
+  seedMenuIfEmpty().then(() => {
+    DB.on('menu', (data) => {
+      menuItems = data || {};
+      updateStats();
+      populateCatFilter();
+      renderTable();
+    });
+  });
+});
+
+function updateStats() {
+  const items = Object.values(menuItems);
+  document.getElementById('statTotal').textContent = items.length;
+  document.getElementById('statAvail').textContent = items.filter(i => i.available !== false).length;
+  document.getElementById('statCats').textContent  = new Set(items.map(i => i.category)).size;
+}
+
+function populateCatFilter() {
+  const cats = [...new Set(Object.values(menuItems).map(i => i.category))];
+  const sel  = document.getElementById('catFilter');
+  const cur  = sel.value;
+  sel.innerHTML = '<option value="">All Categories</option>' + cats.map(c => `<option${c === cur ? ' selected' : ''}>${c}</option>`).join('');
+}
+
+function renderTable() {
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  const cat    = document.getElementById('catFilter').value;
+  const body   = document.getElementById('menuBody');
+  let items    = Object.values(menuItems);
+  if (search) items = items.filter(i => i.name.toLowerCase().includes(search) || (i.description||'').toLowerCase().includes(search));
+  if (cat)    items = items.filter(i => i.category === cat);
+  if (!items.length) { body.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-dim);padding:2rem;">No items found</td></tr>'; return; }
+  body.innerHTML = items.map(item => {
+    const emoji = { Burgers:'🍔', Sides:'🍟', Drinks:'🥤', Desserts:'🍦', Specials:'⭐' }[item.category] || '🍽️';
+    const thumb = item.image
+      ? `<div class="item-thumb"><img src="${item.image}" alt="" onerror="this.parentElement.innerHTML='${emoji}'"></div>`
+      : `<div class="item-thumb">${emoji}</div>`;
+    const avail = item.available !== false;
+    return `<tr>
+      <td>${thumb}</td>
+      <td><div class="table-name">${item.name}</div><div class="table-desc">${item.description || ''}</div></td>
+      <td><span class="badge badge-muted">${item.category}</span></td>
+      <td style="font-weight:700;color:var(--brand-amber);">${formatCAD(item.price)}</td>
+      <td>
+        <label class="toggle">
+          <input type="checkbox" ${avail ? 'checked' : ''} onchange="toggleAvailable('${item.id}', this.checked)">
+          <span class="toggle-slider"></span>
+        </label>
+      </td>
+      <td>
+        <div class="row-actions">
+          <button class="btn btn-secondary btn-sm" onclick="openEditModal('${item.id}')">✏️ Edit</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteItem('${item.id}')">🗑</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function openAddModal() {
+  editingId = null; currentIngredients = []; currentImageBase64 = '';
+  document.getElementById('modalTitle').textContent = 'Add Menu Item';
+  document.getElementById('fieldName').value = '';
+  document.getElementById('fieldCategory').value = '';
+  document.getElementById('fieldPrice').value = '';
+  document.getElementById('fieldDesc').value = '';
+  document.getElementById('fieldImageUrl').value = '';
+  document.getElementById('fieldCategoryNew').value = '';
+  document.getElementById('newCatGroup').classList.add('hidden');
+  resetImagePreview(); renderIngTags();
+  document.getElementById('itemModal').classList.remove('hidden');
+}
+
+function openEditModal(id) {
+  const item = menuItems[id];
+  if (!item) return;
+  editingId = id; currentIngredients = item.ingredients ? [...item.ingredients] : [];
+  currentImageBase64 = item.image && item.image.startsWith('data:') ? item.image : '';
+  document.getElementById('modalTitle').textContent = 'Edit Item';
+  document.getElementById('fieldName').value  = item.name;
+  document.getElementById('fieldPrice').value = item.price;
+  document.getElementById('fieldDesc').value  = item.description || '';
+  document.getElementById('fieldCategoryNew').value = '';
+  document.getElementById('newCatGroup').classList.add('hidden');
+  const catSel = document.getElementById('fieldCategory');
+  const exists = [...catSel.options].some(o => o.value === item.category);
+  if (!exists) { const opt = new Option(item.category, item.category); catSel.insertBefore(opt, catSel.lastElementChild); }
+  catSel.value = item.category;
+  if (item.image) {
+    document.getElementById('fieldImageUrl').value = item.image.startsWith('data:') ? '' : item.image;
+    document.getElementById('imgPreview').src = item.image;
+    document.getElementById('imgPreview').classList.remove('hidden');
+    document.getElementById('uploadLabel').style.display = 'none';
+  } else { document.getElementById('fieldImageUrl').value = ''; resetImagePreview(); }
+  renderIngTags();
+  document.getElementById('itemModal').classList.remove('hidden');
+}
+
+function closeModal() { document.getElementById('itemModal').classList.add('hidden'); }
+
+function handleCatSelect(sel) {
+  const group = document.getElementById('newCatGroup');
+  group.classList.toggle('hidden', sel.value !== '__new__');
+  if (sel.value === '__new__') document.getElementById('fieldCategoryNew').focus();
+}
+
+function addIngredient() {
+  const input = document.getElementById('newIngInput');
+  const val   = input.value.trim();
+  if (val && !currentIngredients.includes(val)) { currentIngredients.push(val); renderIngTags(); }
+  input.value = '';
+}
+
+function removeIngredient(idx) { currentIngredients.splice(idx, 1); renderIngTags(); }
+
+function renderIngTags() {
+  document.getElementById('ingTags').innerHTML = currentIngredients.map((ing, i) =>
+    `<span class="ing-tag">${ing} <button class="ing-remove" onclick="removeIngredient(${i})" type="button">×</button></span>`
+  ).join('');
+}
+
+function handleImageFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    currentImageBase64 = e.target.result;
+    document.getElementById('imgPreview').src = currentImageBase64;
+    document.getElementById('imgPreview').classList.remove('hidden');
+    document.getElementById('uploadLabel').style.display = 'none';
+    document.getElementById('fieldImageUrl').value = '';
+  };
+  reader.readAsDataURL(file);
+}
+
+function previewUrl(url) {
+  currentImageBase64 = '';
+  if (!url) { resetImagePreview(); return; }
+  document.getElementById('imgPreview').src = url;
+  document.getElementById('imgPreview').classList.remove('hidden');
+  document.getElementById('uploadLabel').style.display = 'none';
+}
+
+function resetImagePreview() {
+  document.getElementById('imgPreview').classList.add('hidden');
+  document.getElementById('imgPreview').src = '';
+  document.getElementById('uploadLabel').style.display = '';
+  currentImageBase64 = '';
+}
+
+async function saveItem() {
+  const name     = document.getElementById('fieldName').value.trim();
+  let   category = document.getElementById('fieldCategory').value;
+  if (category === '__new__') category = document.getElementById('fieldCategoryNew').value.trim();
+  const priceStr    = document.getElementById('fieldPrice').value;
+  const description = document.getElementById('fieldDesc').value.trim();
+  const urlField    = document.getElementById('fieldImageUrl').value.trim();
+  if (!name)                              { showToast('Item name is required', 'error'); return; }
+  if (!category)                          { showToast('Category is required', 'error'); return; }
+  if (!priceStr || isNaN(parseFloat(priceStr))) { showToast('Valid price required', 'error'); return; }
+  const id      = editingId || 'item_' + Date.now();
+  const image   = currentImageBase64 || urlField || '';
+  const itemData = {
+    id, name, category,
+    price: parseFloat(parseFloat(priceStr).toFixed(2)),
+    description, image,
+    ingredients: currentIngredients,
+    available: editingId ? (menuItems[editingId]?.available ?? true) : true
+  };
+  try {
+    await DB.set(`menu/${id}`, itemData);
+    closeModal();
+    showToast(editingId ? 'Item updated!' : 'Item added!', 'success');
+  } catch(e) { showToast('Error saving: ' + e.message, 'error'); }
+}
+
+async function deleteItem(id) {
+  const item = menuItems[id];
+  if (!item || !confirm(`Delete "${item.name}"? This cannot be undone.`)) return;
+  try { await DB.remove(`menu/${id}`); showToast('Item deleted', ''); }
+  catch(e) { showToast('Error: ' + e.message, 'error'); }
+}
+
+async function toggleAvailable(id, available) {
+  try {
+    await DB.update(`menu/${id}`, { ...menuItems[id], available });
+    showToast(available ? 'Item available' : 'Item hidden from menu', '');
+  } catch(e) { showToast('Error: ' + e.message, 'error'); }
+}
+</script>
+</body>
+</html>

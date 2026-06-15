@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Front of House — The Juicy Burger</title>
+<link rel="stylesheet" href="style.css">
+<style>
+.pos-layout {
+  display: grid;
+  grid-template-columns: 1fr 370px;
+  grid-template-rows: 56px 1fr;
+  height: 100vh;
+  overflow: hidden;
+}
+.pos-layout .site-header { grid-column: 1 / -1; }
+
+.menu-panel { overflow-y: auto; padding: 1.25rem; background: var(--bg-dark); }
+
+.order-panel {
+  background: var(--bg-panel);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.view-tabs { display: flex; gap: 0.5rem; margin-bottom: 1.25rem; }
+.view-tab {
+  padding: 0.4rem 1rem;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.view-tab.active { background: var(--brand-orange); border-color: var(--brand-orange); color: #fff; }
+
+.cat-tabs { display: flex; gap: 0.5rem; margin-bottom: 1.25rem; flex-wrap: wrap; }
+.cat-tab {
+  padding: 0.35rem 0.9rem;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.cat-tab:hover { border-color: var(--border-light); color: var(--text-primary); }
+.cat-tab.active { background: var(--brand-orange); border-color: var(--brand-orange); color: #fff; }
+
+.menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(185px, 1fr)); gap: 1rem; }
+
+.menu-item-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color 0.12s, transform 0.1s;
+}
+.menu-item-card:hover { border-color: var(--brand-orange); transform: translateY(-2px); }
+.menu-item-card.unavailable { opacity: 0.4; pointer-events: none; }
+
+.item-img {
+  width: 100%; height: 120px;
+  background: linear-gradient(135deg, #2a1200, #3a1f00);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 2.8rem; overflow: hidden;
+}
+.item-img img { width: 100%; height: 100%; object-fit: cover; }
+.item-info { padding: 0.875rem; }
+.item-name { font-weight: 600; font-size: 0.88rem; margin-bottom: 0.25rem; }
+.item-desc { font-size: 0.73rem; color: var(--text-muted); margin-bottom: 0.6rem; line-height: 1.4; }
+.item-footer { display: flex; align-items: center; justify-content: space-between; }
+.item-price { font-weight: 700; color: var(--brand-amber); font-size: 1rem; }
+.item-add-btn {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--brand-orange); color: #fff; border: none;
+  font-size: 1.2rem; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.12s, transform 0.1s; flex-shrink: 0; line-height: 1;
+}
+.item-add-btn:hover { background: #e5571a; }
+.item-add-btn:active { transform: scale(0.88); }
+
+.order-header {
+  padding: 0.875rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0;
+}
+.order-title { font-family: 'Playfair Display', serif; color: var(--brand-amber); font-size: 1.05rem; }
+.order-id-label { font-size: 0.7rem; color: var(--text-dim); margin-top: 1px; }
+.order-items { flex: 1; overflow-y: auto; padding: 0.5rem 1.25rem; }
+
+.order-line { padding: 0.7rem 0; border-bottom: 1px solid var(--border); }
+.order-line:last-child { border-bottom: none; }
+.order-line-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; }
+.order-line-name { font-size: 0.875rem; font-weight: 500; flex: 1; }
+.order-line-price { font-size: 0.875rem; color: var(--brand-amber); white-space: nowrap; flex-shrink: 0; }
+.order-line-mods { font-size: 0.72rem; color: var(--danger); margin-top: 0.2rem; }
+.qty-controls { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.35rem; }
+.qty-btn {
+  width: 22px; height: 22px; border-radius: 50%;
+  border: 1px solid var(--border-light); background: transparent;
+  color: var(--text-primary); cursor: pointer; font-size: 0.85rem;
+  display: flex; align-items: center; justify-content: center; transition: background 0.1s;
+}
+.qty-btn:hover { background: var(--bg-card-hover); }
+.qty-display { font-size: 0.85rem; font-weight: 600; min-width: 18px; text-align: center; }
+.edit-mods-btn {
+  font-size: 0.7rem; color: var(--text-muted); background: none;
+  border: 1px solid var(--border); border-radius: 4px; padding: 1px 6px;
+  cursor: pointer; margin-left: auto; font-family: 'Inter', sans-serif; transition: border-color 0.1s;
+}
+.edit-mods-btn:hover { border-color: var(--brand-orange); color: var(--brand-amber); }
+
+.order-totals {
+  padding: 0.875rem 1.25rem; border-top: 1px solid var(--border);
+  background: #1a0800; flex-shrink: 0;
+}
+.totals-row { display: flex; justify-content: space-between; font-size: 0.82rem; padding: 0.18rem 0; color: var(--text-muted); }
+.totals-row.grand { font-size: 1.1rem; font-weight: 700; color: var(--text-primary); padding-top: 0.5rem; margin-top: 0.35rem; border-top: 1px solid var(--border); }
+.order-actions { padding: 0.875rem 1.25rem; display: flex; flex-direction: column; gap: 0.5rem; flex-shrink: 0; border-top: 1px solid var(--border); }
+.kitchen-banner { background: rgba(46,204,113,0.1); border: 1px solid rgba(46,204,113,0.3); border-radius: var(--radius-sm); padding: 0.6rem 0.875rem; font-size: 0.82rem; color: #5dde8e; text-align: center; }
+
+.payment-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+.payment-option {
+  background: var(--bg-card); border: 2px solid var(--border); border-radius: var(--radius-md);
+  padding: 1.25rem; text-align: center; cursor: pointer; transition: border-color 0.15s, background 0.15s;
+}
+.payment-option:hover { border-color: var(--brand-orange); background: var(--bg-card-hover); }
+.payment-option .pay-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+.payment-option .pay-label { font-size: 0.875rem; font-weight: 600; }
+
+.ingredient-list { display: flex; flex-direction: column; gap: 0.4rem; max-height: 260px; overflow-y: auto; }
+.ingredient-item {
+  display: flex; align-items: center; gap: 0.75rem;
+  padding: 0.55rem 0.75rem; background: var(--bg-card);
+  border-radius: var(--radius-sm); border: 1px solid var(--border);
+  cursor: pointer; transition: border-color 0.1s;
+}
+.ingredient-item:hover { border-color: var(--border-light); }
+.ingredient-item input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--brand-orange); cursor: pointer; flex-shrink: 0; }
+.ingredient-item label { font-size: 0.87rem; cursor: pointer; flex: 1; }
+.ingredient-item.removed { border-color: rgba(231,76,60,0.3); background: rgba(231,76,60,0.05); }
+.ingredient-item.removed label { text-decoration: line-through; color: var(--text-muted); }
+
+.past-order-item { padding: 0.75rem; border: 1px solid var(--border); border-radius: var(--radius-md); cursor: pointer; margin-bottom: 0.5rem; transition: border-color 0.12s, background 0.12s; }
+.past-order-item:hover { border-color: var(--brand-orange); background: var(--bg-card-hover); }
+.past-order-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem; }
+.past-order-id { font-weight: 600; font-size: 0.875rem; }
+.detail-line { display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid var(--border); font-size: 0.875rem; }
+.detail-line:last-child { border-bottom: none; }
+
+@media (max-width: 780px) {
+  .pos-layout { grid-template-columns: 1fr; grid-template-rows: 56px auto 1fr; height: auto; overflow: auto; }
+  .order-panel { border-left: none; border-top: 1px solid var(--border); height: auto; max-height: 70vh; }
+}
+</style>
+</head>
+<body>
+<div class="pos-layout">
+  <header class="site-header">
+    <a href="index.html" class="logo">🍔 The Juicy Burger</a>
+    <div style="display:flex;align-items:center;gap:0.75rem;">
+      <span class="status-dot online" id="connectionDot"></span>
+      <span class="terminal-label">Front of House</span>
+    </div>
+  </header>
+
+  <div class="menu-panel">
+    <div class="view-tabs">
+      <button class="view-tab active" id="btnMenuView" onclick="switchView('menu')">🍔 Menu</button>
+      <button class="view-tab" id="btnOrdersView" onclick="switchView('orders')">
+        📋 Past Orders <span id="activeOrderCount" style="font-size:0.7rem;opacity:0.7;"></span>
+      </button>
+    </div>
+    <div id="menuView">
+      <div class="cat-tabs" id="catTabs"></div>
+      <div class="menu-grid" id="menuGrid">
+        <div style="color:var(--text-dim);font-size:0.85rem;padding:1rem;">Loading menu…</div>
+      </div>
+    </div>
+    <div id="ordersView" class="hidden">
+      <div id="pastOrdersList"></div>
+    </div>
+  </div>
+
+  <div class="order-panel">
+    <div class="order-header">
+      <div>
+        <div class="order-title">Current Order</div>
+        <div class="order-id-label" id="orderIdLabel">—</div>
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="clearOrder()">Clear</button>
+    </div>
+    <div class="order-items" id="orderItems">
+      <div class="empty-state" style="padding:2rem 1rem;">
+        <div class="empty-icon">🛒</div>
+        <p>No items yet.<br>Tap a menu item to add.</p>
+      </div>
+    </div>
+    <div class="order-totals" id="orderTotals" style="display:none;">
+      <div class="totals-row"><span>Subtotal</span><span id="totSubtotal">$0.00</span></div>
+      <div class="totals-row"><span>GST (5%)</span><span id="totGst">$0.00</span></div>
+      <div class="totals-row"><span>PST (8%)</span><span id="totPst">$0.00</span></div>
+      <div class="totals-row grand"><span>Total</span><span id="totTotal">$0.00</span></div>
+    </div>
+    <div class="order-actions">
+      <div id="kitchenBanner" class="kitchen-banner hidden"></div>
+      <button class="btn btn-primary btn-block" id="sendBtn" onclick="sendToKitchen()" disabled>🧾 Send to Kitchen</button>
+      <button class="btn btn-success btn-block hidden" id="paymentBtn" onclick="openPaymentModal()">💳 Mark Payment</button>
+    </div>
+  </div>
+</div>
+
+<!-- Ingredient Modal -->
+<div class="modal-overlay hidden" id="ingredientModal">
+  <div class="modal-box">
+    <div class="modal-title" id="modalItemName">Customize Item</div>
+    <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:1rem;">Uncheck ingredients to remove them.</p>
+    <div class="ingredient-list" id="ingredientList"></div>
+    <div style="margin-top:1rem;">
+      <label class="form-label">Special instructions (optional)</label>
+      <input type="text" class="form-control" id="specialNoteInput" placeholder="e.g. extra sauce, well done…">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeIngredientModal()">Cancel</button>
+      <button class="btn btn-primary" id="confirmAddBtn" onclick="confirmAddItem()">Add to Order</button>
+    </div>
+  </div>
+</div>
+
+<!-- Payment Modal -->
+<div class="modal-overlay hidden" id="paymentModal">
+  <div class="modal-box">
+    <div class="modal-title">Collect Payment</div>
+    <div style="text-align:center;margin-bottom:1.5rem;">
+      <div style="font-size:2.5rem;font-weight:700;color:var(--brand-amber);" id="paymentTotalDisplay">$0.00</div>
+      <div style="font-size:0.8rem;color:var(--text-muted);margin-top:0.25rem;">Total including tax</div>
+    </div>
+    <div class="payment-grid">
+      <div class="payment-option" onclick="markPayment('cash')"><div class="pay-icon">💵</div><div class="pay-label">Cash</div></div>
+      <div class="payment-option" onclick="markPayment('card')"><div class="pay-icon">💳</div><div class="pay-label">Card</div></div>
+      <div class="payment-option" onclick="markPayment('debit')"><div class="pay-icon">🏦</div><div class="pay-label">Debit</div></div>
+      <div class="payment-option" onclick="markPayment('tap')"><div class="pay-icon">📱</div><div class="pay-label">Tap / NFC</div></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closePaymentModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Order Detail Modal -->
+<div class="modal-overlay hidden" id="orderDetailModal">
+  <div class="modal-box">
+    <div class="modal-title" id="detailOrderId">Order Detail</div>
+    <div id="detailContent"></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="document.getElementById('orderDetailModal').classList.add('hidden')">Close</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script src="db.js"></script>
+<script>
+let menuItems = {};
+let currentOrder = { id: generateOrderId(), items: [], status: 'draft' };
+let allOrders = {};
+let activeCategory = 'All';
+let pendingItem = null;
+let pendingIngredients = [];
+let editingLineIdx = null;
+
+window.addEventListener('DOMContentLoaded', () => {
+  initFirebase();
+  seedMenuIfEmpty().then(() => {
+    DB.on('menu', (data) => {
+      menuItems = data || {};
+      renderCatTabs();
+      renderMenuGrid();
+    });
+    listenToOrders();
+  });
+  updateOrderIdLabel();
+});
+
+function renderCatTabs() {
+  const cats = ['All', ...new Set(Object.values(menuItems).map(i => i.category))];
+  document.getElementById('catTabs').innerHTML = cats.map(c =>
+    `<button class="cat-tab ${c === activeCategory ? 'active' : ''}" onclick="setCategory('${c}')">${c}</button>`
+  ).join('');
+}
+
+function setCategory(cat) {
+  activeCategory = cat;
+  document.querySelectorAll('.cat-tab').forEach(t => t.classList.toggle('active', t.textContent === cat));
+  renderMenuGrid();
+}
+
+function renderMenuGrid() {
+  const grid = document.getElementById('menuGrid');
+  let items = Object.values(menuItems);
+  if (activeCategory !== 'All') items = items.filter(i => i.category === activeCategory);
+  if (!items.length) { grid.innerHTML = '<div style="color:var(--text-dim);font-size:0.85rem;padding:1rem;">No items in this category.</div>'; return; }
+  grid.innerHTML = items.map(item => {
+    const emoji = catEmoji(item.category);
+    const imgContent = item.image ? `<img src="${item.image}" alt="${item.name}" onerror="this.parentElement.innerHTML='${emoji}'">` : emoji;
+    const avail = item.available !== false;
+    return `<div class="menu-item-card ${avail ? '' : 'unavailable'}" onclick="openItemModal('${item.id}')">
+      <div class="item-img">${imgContent}</div>
+      <div class="item-info">
+        <div class="item-name">${item.name}</div>
+        <div class="item-desc">${item.description || ''}</div>
+        <div class="item-footer">
+          <span class="item-price">${formatCAD(item.price)}</span>
+          <button class="item-add-btn" onclick="event.stopPropagation();quickAdd('${item.id}')">+</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function catEmoji(cat) {
+  return { Burgers:'🍔', Sides:'🍟', Drinks:'🥤', Desserts:'🍦', Specials:'⭐' }[cat] || '🍽️';
+}
+
+function quickAdd(itemId) {
+  const item = menuItems[itemId];
+  if (item) addLineToOrder(item, [], '');
+}
+
+function openItemModal(itemId) {
+  const item = menuItems[itemId];
+  if (!item) return;
+  pendingItem = item;
+  pendingIngredients = item.ingredients ? [...item.ingredients] : [];
+  editingLineIdx = null;
+  document.getElementById('modalItemName').textContent = item.name;
+  document.getElementById('specialNoteInput').value = '';
+  document.getElementById('confirmAddBtn').textContent = 'Add to Order';
+  document.getElementById('confirmAddBtn').onclick = confirmAddItem;
+  renderIngredientList();
+  document.getElementById('ingredientModal').classList.remove('hidden');
+}
+
+function renderIngredientList() {
+  const list = document.getElementById('ingredientList');
+  if (!pendingIngredients.length) { list.innerHTML = '<div style="color:var(--text-muted);font-size:0.85rem;padding:0.5rem;">No customizable ingredients.</div>'; return; }
+  list.innerHTML = pendingIngredients.map((ing, i) =>
+    `<label class="ingredient-item" id="ing_wrap_${i}">
+      <input type="checkbox" id="ing_${i}" checked onchange="toggleIngredient(${i}, this.checked)">
+      <label for="ing_${i}">${typeof ing === 'object' ? ing.name : ing}</label>
+    </label>`
+  ).join('');
+}
+
+function toggleIngredient(idx, checked) {
+  document.getElementById(`ing_wrap_${idx}`).classList.toggle('removed', !checked);
+}
+
+function confirmAddItem() {
+  if (!pendingItem) return;
+  const removed = pendingIngredients
+    .filter((ing, i) => { const cb = document.getElementById(`ing_${i}`); return cb && !cb.checked; })
+    .map(ing => typeof ing === 'object' ? ing.name : ing);
+  const note = document.getElementById('specialNoteInput').value.trim();
+  addLineToOrder(pendingItem, removed, note);
+  closeIngredientModal();
+}
+
+function addLineToOrder(item, removed, note) {
+  const existing = currentOrder.items.find(l =>
+    l.itemId === item.id && JSON.stringify(l.removed) === JSON.stringify(removed) && l.note === note
+  );
+  if (existing) { existing.qty++; }
+  else { currentOrder.items.push({ itemId: item.id, name: item.name, price: item.price, qty: 1, removed, note }); }
+  renderOrderPanel();
+  showToast(`${item.name} added`, 'success');
+}
+
+function closeIngredientModal() {
+  document.getElementById('ingredientModal').classList.add('hidden');
+  pendingItem = null; editingLineIdx = null;
+}
+
+function renderOrderPanel() {
+  const items = document.getElementById('orderItems');
+  const totalsBox = document.getElementById('orderTotals');
+  const sendBtn = document.getElementById('sendBtn');
+  if (!currentOrder.items.length) {
+    items.innerHTML = `<div class="empty-state" style="padding:2rem 1rem;"><div class="empty-icon">🛒</div><p>No items yet.<br>Tap a menu item to add.</p></div>`;
+    totalsBox.style.display = 'none'; sendBtn.disabled = true; return;
+  }
+  items.innerHTML = currentOrder.items.map((line, idx) => `
+    <div class="order-line">
+      <div class="order-line-top">
+        <span class="order-line-name">${line.name}</span>
+        <span class="order-line-price">${formatCAD(line.price * line.qty)}</span>
+      </div>
+      ${line.removed && line.removed.length ? `<div class="order-line-mods">🚫 No: ${line.removed.join(', ')}</div>` : ''}
+      ${line.note ? `<div class="order-line-mods" style="color:var(--text-muted);">📝 ${line.note}</div>` : ''}
+      <div class="qty-controls">
+        <button class="qty-btn" onclick="changeQty(${idx}, -1)">−</button>
+        <span class="qty-display">${line.qty}</span>
+        <button class="qty-btn" onclick="changeQty(${idx}, 1)">+</button>
+        <button class="edit-mods-btn" onclick="editLine(${idx})">✏️ edit</button>
+      </div>
+    </div>`).join('');
+  const subtotal = currentOrder.items.reduce((s, l) => s + l.price * l.qty, 0);
+  const { gst, pst, total } = calcTotals(subtotal);
+  document.getElementById('totSubtotal').textContent = formatCAD(subtotal);
+  document.getElementById('totGst').textContent = formatCAD(gst);
+  document.getElementById('totPst').textContent = formatCAD(pst);
+  document.getElementById('totTotal').textContent = formatCAD(total);
+  totalsBox.style.display = '';
+  sendBtn.disabled = currentOrder.status !== 'draft';
+}
+
+function changeQty(idx, delta) {
+  currentOrder.items[idx].qty += delta;
+  if (currentOrder.items[idx].qty <= 0) currentOrder.items.splice(idx, 1);
+  renderOrderPanel();
+}
+
+function editLine(idx) {
+  const line = currentOrder.items[idx];
+  const item = menuItems[line.itemId];
+  if (!item) return;
+  pendingItem = item; pendingIngredients = item.ingredients ? [...item.ingredients] : []; editingLineIdx = idx;
+  document.getElementById('modalItemName').textContent = 'Edit: ' + item.name;
+  document.getElementById('specialNoteInput').value = line.note || '';
+  document.getElementById('confirmAddBtn').textContent = 'Update Item';
+  renderIngredientList();
+  setTimeout(() => {
+    pendingIngredients.forEach((ing, i) => {
+      const name = typeof ing === 'object' ? ing.name : ing;
+      if (line.removed && line.removed.includes(name)) {
+        const cb = document.getElementById(`ing_${i}`);
+        if (cb) { cb.checked = false; document.getElementById(`ing_wrap_${i}`).classList.add('removed'); }
+      }
+    });
+  }, 0);
+  document.getElementById('confirmAddBtn').onclick = () => {
+    const removed = pendingIngredients
+      .filter((ing, i) => { const cb = document.getElementById(`ing_${i}`); return cb && !cb.checked; })
+      .map(ing => typeof ing === 'object' ? ing.name : ing);
+    const note = document.getElementById('specialNoteInput').value.trim();
+    currentOrder.items[editingLineIdx].removed = removed;
+    currentOrder.items[editingLineIdx].note = note;
+    closeIngredientModal();
+    renderOrderPanel();
+    document.getElementById('confirmAddBtn').onclick = confirmAddItem;
+  };
+  document.getElementById('ingredientModal').classList.remove('hidden');
+}
+
+function clearOrder() {
+  if (!currentOrder.items.length) return;
+  if (!confirm('Clear current order?')) return;
+  currentOrder = { id: generateOrderId(), items: [], status: 'draft' };
+  updateOrderIdLabel(); renderOrderPanel(); resetOrderActions();
+}
+
+function updateOrderIdLabel() { document.getElementById('orderIdLabel').textContent = currentOrder.id; }
+
+function resetOrderActions() {
+  document.getElementById('kitchenBanner').classList.add('hidden');
+  document.getElementById('sendBtn').classList.remove('hidden');
+  document.getElementById('sendBtn').disabled = true;
+  document.getElementById('paymentBtn').classList.add('hidden');
+  document.getElementById('paymentBtn').textContent = '💳 Mark Payment';
+  document.getElementById('paymentBtn').disabled = false;
+}
+
+async function sendToKitchen() {
+  if (!currentOrder.items.length) return;
+  const subtotal = currentOrder.items.reduce((s, l) => s + l.price * l.qty, 0);
+  const { gst, pst, total } = calcTotals(subtotal);
+  const orderData = { ...currentOrder, subtotal, gst, pst, total, status: 'pending', paymentStatus: 'unpaid', sentAt: Date.now() };
+  try {
+    await DB.set(`orders/${currentOrder.id}`, orderData);
+  } catch(e) { showToast('Error saving order: ' + e.message, 'error'); return; }
+  currentOrder.status = 'pending';
+  document.getElementById('sendBtn').disabled = true;
+  document.getElementById('paymentBtn').classList.remove('hidden');
+  const banner = document.getElementById('kitchenBanner');
+  banner.classList.remove('hidden');
+  banner.textContent = `✅ Order ${currentOrder.id} sent to kitchen!`;
+  showToast('Order sent to kitchen!', 'success');
+}
+
+function openPaymentModal() {
+  const subtotal = currentOrder.items.reduce((s, l) => s + l.price * l.qty, 0);
+  document.getElementById('paymentTotalDisplay').textContent = formatCAD(calcTotals(subtotal).total);
+  document.getElementById('paymentModal').classList.remove('hidden');
+}
+
+async function markPayment(method) {
+  const paidAt = Date.now();
+  const subtotal = currentOrder.items.reduce((s, l) => s + l.price * l.qty, 0);
+  const { gst, pst, total } = calcTotals(subtotal);
+  try {
+    await DB.update(`orders/${currentOrder.id}`, { paymentStatus: 'paid', paymentMethod: method, paidAt });
+  } catch(e) { showToast('Error recording payment: ' + e.message, 'error'); return; }
+  closePaymentModal();
+  showToast(`✅ Payment recorded: ${method.charAt(0).toUpperCase() + method.slice(1)}`, 'success');
+  document.getElementById('paymentBtn').textContent = '✅ Paid';
+  document.getElementById('paymentBtn').disabled = true;
+  setTimeout(() => {
+    currentOrder = { id: generateOrderId(), items: [], status: 'draft' };
+    updateOrderIdLabel(); renderOrderPanel(); resetOrderActions();
+  }, 2000);
+}
+
+function closePaymentModal() { document.getElementById('paymentModal').classList.add('hidden'); }
+
+function listenToOrders() {
+  DB.on('orders', (data) => {
+    allOrders = data || {};
+    document.getElementById('activeOrderCount').textContent = Object.keys(allOrders).length ? `(${Object.keys(allOrders).length})` : '';
+    renderPastOrders();
+  });
+}
+
+function renderPastOrders() {
+  const list = document.getElementById('pastOrdersList');
+  const orders = Object.values(allOrders).sort((a, b) => (b.sentAt || 0) - (a.sentAt || 0));
+  if (!orders.length) { list.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><p>No orders yet</p></div>'; return; }
+  list.innerHTML = orders.map(o => {
+    const time = new Date(o.sentAt).toLocaleString('en-CA', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+    const statusBadge = { pending:'<span class="badge badge-warning">Pending</span>', prepping:'<span class="badge badge-info">Prepping</span>', done:'<span class="badge badge-success">Done</span>', draft:'<span class="badge badge-muted">Draft</span>' }[o.status] || '';
+    const payBadge = o.paymentStatus === 'paid' ? '<span class="badge badge-success">Paid</span>' : '<span class="badge badge-warning">Unpaid</span>';
+    return `<div class="past-order-item" onclick="showOrderDetail('${o.id}')">
+      <div class="past-order-top"><span class="past-order-id">${o.id}</span><span style="font-size:0.75rem;color:var(--text-muted)">${time}</span></div>
+      <div style="display:flex;gap:0.4rem;align-items:center;flex-wrap:wrap;">${statusBadge} ${payBadge}<span style="margin-left:auto;font-weight:700;color:var(--brand-amber)">${formatCAD(o.total || 0)}</span></div>
+    </div>`;
+  }).join('');
+}
+
+function showOrderDetail(orderId) {
+  const o = allOrders[orderId];
+  if (!o) return;
+  const statusBadge = { pending:'<span class="badge badge-warning">Pending</span>', prepping:'<span class="badge badge-info">Prepping</span>', done:'<span class="badge badge-success">Done</span>' }[o.status] || '';
+  const payBadge = o.paymentStatus === 'paid' ? '<span class="badge badge-success">Paid</span>' : '<span class="badge badge-warning">Unpaid</span>';
+  document.getElementById('detailOrderId').textContent = o.id;
+  document.getElementById('detailContent').innerHTML = `
+    <div style="display:flex;gap:0.4rem;margin-bottom:1rem;flex-wrap:wrap;">${statusBadge} ${payBadge}${o.paymentMethod ? `<span class="badge badge-muted">${o.paymentMethod}</span>` : ''}</div>
+    <div style="margin-bottom:1rem;">${(o.items||[]).map(l => `<div class="detail-line"><div><span>${l.name}</span> × ${l.qty}${l.removed && l.removed.length ? `<div style="font-size:0.72rem;color:var(--danger)">No: ${l.removed.join(', ')}</div>` : ''}</div><span style="color:var(--brand-amber)">${formatCAD(l.price * l.qty)}</span></div>`).join('')}</div>
+    <div style="font-size:0.82rem;border-top:1px solid var(--border);padding-top:0.75rem;">
+      <div style="display:flex;justify-content:space-between;color:var(--text-muted);padding:0.2rem 0;"><span>Subtotal</span><span>${formatCAD(o.subtotal||0)}</span></div>
+      <div style="display:flex;justify-content:space-between;color:var(--text-muted);padding:0.2rem 0;"><span>GST (5%)</span><span>${formatCAD(o.gst||0)}</span></div>
+      <div style="display:flex;justify-content:space-between;color:var(--text-muted);padding:0.2rem 0;"><span>PST (8%)</span><span>${formatCAD(o.pst||0)}</span></div>
+      <div style="display:flex;justify-content:space-between;font-weight:700;font-size:1.05rem;padding:0.5rem 0;border-top:1px solid var(--border);margin-top:0.4rem;"><span>Total</span><span style="color:var(--brand-amber)">${formatCAD(o.total||0)}</span></div>
+    </div>
+    <div style="font-size:0.75rem;color:var(--text-dim);margin-top:0.5rem;">Sent: ${new Date(o.sentAt).toLocaleString('en-CA')}</div>`;
+  document.getElementById('orderDetailModal').classList.remove('hidden');
+}
+
+function switchView(view) {
+  document.getElementById('menuView').classList.toggle('hidden', view !== 'menu');
+  document.getElementById('ordersView').classList.toggle('hidden', view !== 'orders');
+  document.getElementById('btnMenuView').classList.toggle('active', view === 'menu');
+  document.getElementById('btnOrdersView').classList.toggle('active', view === 'orders');
+}
+</script>
+</body>
+</html>
