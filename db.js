@@ -77,8 +77,8 @@ const DB = {
   async set(path, value) {
     if (!this._ready) { this._lsSet(path, value); this._emit(path, value); return; }
     const parts = path.split('/');
-    if (parts[0] === 'menu')   return this._post({ action: 'setMenuItem', item: value });
-    if (parts[0] === 'orders') return this._post({ action: 'setOrder',    order: value });
+    if (parts[0] === 'menu')   return this._get({ action: 'setMenuItem', item: JSON.stringify(value) });
+    if (parts[0] === 'orders') return this._get({ action: 'setOrder',    order: JSON.stringify(value) });
   },
 
   // Merge fields into an existing order
@@ -91,8 +91,8 @@ const DB = {
       return;
     }
     const parts = path.split('/');
-    if (parts[0] === 'orders') return this._post({ action: 'updateOrder', id: parts[1], fields });
-    if (parts[0] === 'menu')   return this._post({ action: 'setMenuItem', item: { ...fields, id: parts[1] } });
+    if (parts[0] === 'orders') return this._get({ action: 'updateOrder', id: parts[1], fields: JSON.stringify(fields) });
+    if (parts[0] === 'menu')   return this._get({ action: 'setMenuItem', item: JSON.stringify({ id: parts[1], ...fields }) });
   },
 
   // One-time fetch
@@ -112,17 +112,13 @@ const DB = {
         callback(data || {});
       } catch(e) {
         console.warn('DB.on poll error:', e.message);
-        // Fall back to localStorage
         callback(this._lsGetAll(path) || this._lsGet(path) || {});
       }
     };
 
-    fetchAndCall(); // immediate
+    fetchAndCall();
 
-    // Poll every 5 seconds for live updates across terminals
     const interval = setInterval(fetchAndCall, 5000);
-
-    // Store so callers could clear if needed (not required for basic use)
     this._intervals = this._intervals || [];
     this._intervals.push(interval);
   },
@@ -137,8 +133,8 @@ const DB = {
       return;
     }
     const parts = path.split('/');
-    if (parts[0] === 'menu')   return this._post({ action: 'deleteMenuItem', id: parts[1] });
-    if (parts[0] === 'orders') return this._post({ action: 'deleteOrder',    id: parts[1] });
+    if (parts[0] === 'menu')   return this._get({ action: 'deleteMenuItem', id: parts[1] });
+    if (parts[0] === 'orders') return this._get({ action: 'deleteOrder',    id: parts[1] });
   },
 
   // ---- localStorage fallback (demo / no URL set) -------------
@@ -172,14 +168,12 @@ const DB = {
 // ---------------------------------------------------------------
 async function seedMenuIfEmpty() {
   if (!DB._ready) {
-    // localStorage fallback — seed if empty
     const menu = DB._lsGet('menu');
     if (menu && Object.keys(menu).length) return;
-    // minimal seed via localStorage
     return;
   }
   try {
-    await DB._post({ action: 'seedMenu' });
+    await DB._get({ action: 'seedMenu' });
   } catch(e) {
     console.warn('Seed failed:', e.message);
   }
