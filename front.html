@@ -249,8 +249,6 @@
     <div class="payment-grid">
       <div class="payment-option" onclick="markPayment('cash')"><div class="pay-icon">💵</div><div class="pay-label">Cash</div></div>
       <div class="payment-option" onclick="markPayment('card')"><div class="pay-icon">💳</div><div class="pay-label">Card</div></div>
-      <div class="payment-option" onclick="markPayment('debit')"><div class="pay-icon">🏦</div><div class="pay-label">Debit</div></div>
-      <div class="payment-option" onclick="markPayment('tap')"><div class="pay-icon">📱</div><div class="pay-label">Tap / NFC</div></div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closePaymentModal()">Cancel</button>
@@ -506,20 +504,21 @@ function openPaymentModal() {
 }
 
 async function markPayment(method) {
-  const paidAt = Date.now();
-  const subtotal = currentOrder.items.reduce((s, l) => s + l.price * l.qty, 0);
-  const { gst, pst, total } = calcTotals(subtotal);
-  try {
-    await DB.update(`orders/${currentOrder.id}`, { paymentStatus: 'paid', paymentMethod: method, paidAt });
-  } catch(e) { showToast('Error recording payment: ' + e.message, 'error'); return; }
+  const paidAt   = Date.now();
+  const orderId  = currentOrder.id;
   closePaymentModal();
+  try {
+    await DB.update(`orders/${orderId}`, { paymentStatus: 'paid', paymentMethod: method, paidAt });
+  } catch(e) {
+    showToast('Error recording payment: ' + e.message, 'error');
+    return;
+  }
   showToast(`✅ Payment recorded: ${method.charAt(0).toUpperCase() + method.slice(1)}`, 'success');
-  document.getElementById('paymentBtn').textContent = '✅ Paid';
-  document.getElementById('paymentBtn').disabled = true;
-  setTimeout(() => {
-    currentOrder = { id: generateOrderId(), items: [], status: 'draft' };
-    updateOrderIdLabel(); renderOrderPanel(); resetOrderActions();
-  }, 2000);
+  // Immediately reset to a fresh order
+  currentOrder = { id: generateOrderId(), items: [], status: 'draft' };
+  updateOrderIdLabel();
+  renderOrderPanel();
+  resetOrderActions();
 }
 
 function closePaymentModal() { document.getElementById('paymentModal').classList.add('hidden'); }
