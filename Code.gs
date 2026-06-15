@@ -1,6 +1,7 @@
 // ============================================================
 // The Juicy Burger — Google Apps Script Backend
-// Paste this entire file into your Apps Script editor.
+// ALL actions go through doGet() to avoid CORS issues.
+// One-time deploy — never needs redeploying.
 // ============================================================
 //
 // SHEET SETUP:
@@ -19,40 +20,48 @@
 
 var SS = SpreadsheetApp.getActiveSpreadsheet();
 
-// ---- CORS helper ----
+// ---- CORS-friendly response ----
 function makeResponse(data) {
   return ContentService
     .createTextOutput(JSON.stringify(data))
     .setMimeType(ContentService.MimeType.JSON);
 }
 
-// ---- Router ----
+// ============================================================
+// SINGLE ENTRY POINT — everything is a GET request
+// ============================================================
 function doGet(e) {
   try {
-    var action = e.parameter.action;
-    if (action === 'getMenu')   return makeResponse(getMenu());
-    if (action === 'getOrders') return makeResponse(getOrders());
-    return makeResponse({ error: 'Unknown action' });
+    var p      = e.parameter;
+    var action = p.action;
+
+    // ---- Menu reads ----
+    if (action === 'getMenu')        return makeResponse(getMenu());
+
+    // ---- Menu writes (sent as GET params) ----
+    if (action === 'setMenuItem')    return makeResponse(setMenuItem(safeParseJson(p.item, null)));
+    if (action === 'deleteMenuItem') return makeResponse(deleteMenuItem(p.id));
+
+    // ---- Order reads ----
+    if (action === 'getOrders')      return makeResponse(getOrders());
+
+    // ---- Order writes ----
+    if (action === 'setOrder')       return makeResponse(setOrder(safeParseJson(p.order, null)));
+    if (action === 'updateOrder')    return makeResponse(updateOrder(p.id, safeParseJson(p.fields, {})));
+    if (action === 'deleteOrder')    return makeResponse(deleteOrder(p.id));
+
+    // ---- Seed ----
+    if (action === 'seedMenu')       return makeResponse(seedMenuIfEmpty());
+
+    return makeResponse({ error: 'Unknown action: ' + action });
   } catch(err) {
     return makeResponse({ error: err.toString() });
   }
 }
 
+// Keep doPost as a no-op stub (won't be used)
 function doPost(e) {
-  try {
-    var data = JSON.parse(e.postData.contents);
-    var action = data.action;
-
-    if (action === 'setMenuItem')    return makeResponse(setMenuItem(data.item));
-    if (action === 'deleteMenuItem') return makeResponse(deleteMenuItem(data.id));
-    if (action === 'setOrder')       return makeResponse(setOrder(data.order));
-    if (action === 'updateOrder')    return makeResponse(updateOrder(data.id, data.fields));
-    if (action === 'deleteOrder')    return makeResponse(deleteOrder(data.id));
-    if (action === 'seedMenu')       return makeResponse(seedMenuIfEmpty());
-    return makeResponse({ error: 'Unknown action' });
-  } catch(err) {
-    return makeResponse({ error: err.toString() });
-  }
+  return makeResponse({ error: 'POST not supported. Use GET.' });
 }
 
 // ============================================================
@@ -66,7 +75,7 @@ function getMenu() {
   var result = {};
   for (var i = 1; i < rows.length; i++) {
     var r = rows[i];
-    if (!r[0]) continue; // skip blank rows
+    if (!r[0]) continue;
     var id = String(r[0]);
     result[id] = {
       id:          id,
@@ -83,34 +92,37 @@ function getMenu() {
 }
 
 function setMenuItem(item) {
+  if (!item || !item.id) return { ok: false, error: 'Invalid item' };
   var sheet = SS.getSheetByName('Menu');
-  if (!sheet) { SS.insertSheet('Menu'); sheet = SS.getSheetByName('Menu'); ensureMenuHeaders(sheet); }
+  if (!sheet) {
+    sheet = SS.insertSheet('Menu');
+    ensureMenuHeaders(sheet);
+  }
   var rows = sheet.getDataRange().getValues();
-  // Find existing row by id
+  var rowData = [
+    item.id,
+    item.name        || '',
+    item.category    || '',
+    item.price       || 0,
+    item.description || '',
+    item.image       || '',
+    item.available !== false,
+    JSON.stringify(item.ingredients || [])
+  ];
   for (var i = 1; i < rows.length; i++) {
     if (String(rows[i][0]) === String(item.id)) {
-      sheet.getRange(i + 1, 1, 1, 8).setValues([[
-        item.id, item.name, item.category, item.price,
-        item.description || '', item.image || '',
-        item.available !== false,
-        JSON.stringify(item.ingredients || [])
-      ]]);
+      sheet.getRange(i + 1, 1, 1, 8).setValues([rowData]);
       return { ok: true, action: 'updated' };
     }
   }
-  // Append new
-  sheet.appendRow([
-    item.id, item.name, item.category, item.price,
-    item.description || '', item.image || '',
-    item.available !== false,
-    JSON.stringify(item.ingredients || [])
-  ]);
+  sheet.appendRow(rowData);
   return { ok: true, action: 'inserted' };
 }
 
 function deleteMenuItem(id) {
+  if (!id) return { ok: false, error: 'No id' };
   var sheet = SS.getSheetByName('Menu');
-  if (!sheet) return { ok: false };
+  if (!sheet) return { ok: false, error: 'No Menu sheet' };
   var rows = sheet.getDataRange().getValues();
   for (var i = 1; i < rows.length; i++) {
     if (String(rows[i][0]) === String(id)) {
@@ -118,7 +130,7 @@ function deleteMenuItem(id) {
       return { ok: true };
     }
   }
-  return { ok: false, error: 'Not found' };
+  return { ok: false, error: 'Item not found' };
 }
 
 function ensureMenuHeaders(sheet) {
@@ -158,9 +170,13 @@ function getOrders() {
 }
 
 function setOrder(order) {
+  if (!order || !order.id) return { ok: false, error: 'Invalid order' };
   var sheet = SS.getSheetByName('Orders');
-  if (!sheet) { SS.insertSheet('Orders'); sheet = SS.getSheetByName('Orders'); ensureOrderHeaders(sheet); }
-  var rows = sheet.getDataRange().getValues();
+  if (!sheet) {
+    sheet = SS.insertSheet('Orders');
+    ensureOrderHeaders(sheet);
+  }
+  var rows    = sheet.getDataRange().getValues();
   var rowData = orderToRow(order);
   for (var i = 1; i < rows.length; i++) {
     if (String(rows[i][0]) === String(order.id)) {
@@ -173,12 +189,12 @@ function setOrder(order) {
 }
 
 function updateOrder(id, fields) {
+  if (!id) return { ok: false, error: 'No id' };
   var sheet = SS.getSheetByName('Orders');
-  if (!sheet) return { ok: false };
+  if (!sheet) return { ok: false, error: 'No Orders sheet' };
   var rows = sheet.getDataRange().getValues();
   for (var i = 1; i < rows.length; i++) {
     if (String(rows[i][0]) === String(id)) {
-      // Read current, merge fields, write back
       var current = {
         id:            rows[i][0],
         sentAt:        rows[i][1],
@@ -192,7 +208,6 @@ function updateOrder(id, fields) {
         total:         rows[i][9],
         items:         safeParseJson(rows[i][10], [])
       };
-      // Apply updates
       if (fields.status        !== undefined) current.status        = fields.status;
       if (fields.paymentStatus !== undefined) current.paymentStatus = fields.paymentStatus;
       if (fields.paymentMethod !== undefined) current.paymentMethod = fields.paymentMethod;
@@ -205,8 +220,9 @@ function updateOrder(id, fields) {
 }
 
 function deleteOrder(id) {
+  if (!id) return { ok: false, error: 'No id' };
   var sheet = SS.getSheetByName('Orders');
-  if (!sheet) return { ok: false };
+  if (!sheet) return { ok: false, error: 'No Orders sheet' };
   var rows = sheet.getDataRange().getValues();
   for (var i = 1; i < rows.length; i++) {
     if (String(rows[i][0]) === String(id)) {
@@ -214,13 +230,13 @@ function deleteOrder(id) {
       return { ok: true };
     }
   }
-  return { ok: false };
+  return { ok: false, error: 'Order not found' };
 }
 
 function orderToRow(o) {
   return [
     o.id,
-    o.sentAt ? new Date(typeof o.sentAt === 'number' ? o.sentAt : o.sentAt) : '',
+    o.sentAt  ? new Date(typeof o.sentAt  === 'number' ? o.sentAt  : o.sentAt)  : '',
     o.status        || 'pending',
     o.paymentStatus || 'unpaid',
     o.paymentMethod || '',
@@ -250,7 +266,7 @@ function seedMenuIfEmpty() {
     ensureMenuHeaders(sheet);
   } else {
     var rows = sheet.getDataRange().getValues();
-    if (rows.length > 1) return { ok: true, seeded: false }; // already has data
+    if (rows.length > 1) return { ok: true, seeded: false };
   }
 
   var defaults = [
@@ -265,11 +281,9 @@ function seedMenuIfEmpty() {
     ['item_soda','Fountain Soda','Drinks',3.49,'Pepsi, Diet Pepsi, 7UP, Orange Crush, Ginger Ale','',true,'["Choice of Soda","Ice"]']
   ];
 
-  // Write headers + data
   sheet.getRange(1, 1, 1, 8).setValues([['id','name','category','price','description','image','available','ingredients']]);
   sheet.getRange(2, 1, defaults.length, 8).setValues(defaults);
 
-  // Ensure Orders sheet exists too
   if (!SS.getSheetByName('Orders')) {
     var os = SS.insertSheet('Orders');
     ensureOrderHeaders(os);
@@ -282,5 +296,6 @@ function seedMenuIfEmpty() {
 // Utility
 // ============================================================
 function safeParseJson(str, fallback) {
+  if (str === null || str === undefined) return fallback;
   try { return JSON.parse(str); } catch(e) { return fallback; }
 }

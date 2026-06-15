@@ -1,10 +1,11 @@
 // db.js — The Juicy Burger
 // Google Sheets backend via Apps Script Web App.
+// ALL requests use GET to avoid CORS preflight issues.
 // ---------------------------------------------------------------
 // SETUP: Paste your Apps Script Web App URL below.
 // ---------------------------------------------------------------
 
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyfdpm8iUpdBuTb5xPswBM-l2DBxNS7w8k2E3fb5SAsVNaGnMix42us8DjSab1jBRCR/exec"; // ← Paste your Web App URL here
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyfdpm8iUpdBuTb5xPswBM-l2DBxNS7w8k2E3fb5SAsVNaGnMix42us8DjSab1jBRCR/exec"; // ← Your Web App URL
 
 // ---------------------------------------------------------------
 // Tax rates (Ontario, Canada)
@@ -45,62 +46,66 @@ function showToast(msg, type = '') {
 
 // ---------------------------------------------------------------
 // DB — thin wrapper around the Apps Script Web App
+// Everything goes through GET params to avoid CORS issues.
 // Falls back to localStorage if SCRIPT_URL is not set.
 // ---------------------------------------------------------------
 const DB = {
   _ready: !!SCRIPT_URL,
 
-  // ---- Internal fetch helpers --------------------------------
+  // ---- Core GET helper (all requests go here) ----------------
   async _get(params) {
     if (!this._ready) return null;
     const url = SCRIPT_URL + '?' + new URLSearchParams(params).toString();
-    const res = await fetch(url);
+    const res  = await fetch(url);
     const json = await res.json();
     if (json.error) throw new Error(json.error);
     return json;
   },
 
-  async _post(body) {
-    if (!this._ready) return null;
-    const res = await fetch(SCRIPT_URL, {
-      method: 'POST',
-      body: JSON.stringify(body)
-    });
-    const json = await res.json();
-    if (json.error) throw new Error(json.error);
-    return json;
+  // ---- Encode an object/array as a JSON GET param ------------
+  async _send(params) {
+    return this._get(params);
   },
 
-  // ---- Public API (mirrors the old Firebase DB wrapper) ------
+  // ---- Public API --------------------------------------------
 
-  // Save/replace a full order or menu item by path
+  // Save/replace a menu item or order
   async set(path, value) {
     if (!this._ready) { this._lsSet(path, value); this._emit(path, value); return; }
     const parts = path.split('/');
-    if (parts[0] === 'menu')   return this._post({ action: 'setMenuItem', item: value });
-    if (parts[0] === 'orders') return this._post({ action: 'setOrder',    order: value });
+    if (parts[0] === 'menu') {
+      return this._send({ action: 'setMenuItem', item: JSON.stringify(value) });
+    }
+    if (parts[0] === 'orders') {
+      return this._send({ action: 'setOrder', order: JSON.stringify(value) });
+    }
   },
 
-  // Merge fields into an existing order
+  // Merge fields into an existing order or menu item
   async update(path, fields) {
     if (!this._ready) {
       const existing = this._lsGet(path) || {};
-      const merged = { ...existing, ...fields };
+      const merged   = { ...existing, ...fields };
       this._lsSet(path, merged);
       this._emit(path, merged);
       return;
     }
     const parts = path.split('/');
-    if (parts[0] === 'orders') return this._post({ action: 'updateOrder', id: parts[1], fields });
-    if (parts[0] === 'menu')   return this._post({ action: 'setMenuItem', item: { ...fields, id: parts[1] } });
+    if (parts[0] === 'orders') {
+      return this._send({ action: 'updateOrder', id: parts[1], fields: JSON.stringify(fields) });
+    }
+    if (parts[0] === 'menu') {
+      // For menu updates (e.g. toggling available), fetch current then set merged
+      return this._send({ action: 'setMenuItem', item: JSON.stringify({ ...fields, id: parts[1] }) });
+    }
   },
 
   // One-time fetch
   async get(path) {
     if (!this._ready) return this._lsGet(path);
     const parts = path.split('/');
-    if (parts[0] === 'menu')   return this._get({ action: 'getMenu' });
-    if (parts[0] === 'orders') return this._get({ action: 'getOrders' });
+    if (parts[0] === 'menu')   return this._send({ action: 'getMenu' });
+    if (parts[0] === 'orders') return this._send({ action: 'getOrders' });
     return null;
   },
 
@@ -112,17 +117,13 @@ const DB = {
         callback(data || {});
       } catch(e) {
         console.warn('DB.on poll error:', e.message);
-        // Fall back to localStorage
         callback(this._lsGetAll(path) || this._lsGet(path) || {});
       }
     };
 
-    fetchAndCall(); // immediate
+    fetchAndCall();
 
-    // Poll every 5 seconds for live updates across terminals
     const interval = setInterval(fetchAndCall, 5000);
-
-    // Store so callers could clear if needed (not required for basic use)
     this._intervals = this._intervals || [];
     this._intervals.push(interval);
   },
@@ -137,8 +138,8 @@ const DB = {
       return;
     }
     const parts = path.split('/');
-    if (parts[0] === 'menu')   return this._post({ action: 'deleteMenuItem', id: parts[1] });
-    if (parts[0] === 'orders') return this._post({ action: 'deleteOrder',    id: parts[1] });
+    if (parts[0] === 'menu')   return this._send({ action: 'deleteMenuItem', id: parts[1] });
+    if (parts[0] === 'orders') return this._send({ action: 'deleteOrder',    id: parts[1] });
   },
 
   // ---- localStorage fallback (demo / no URL set) -------------
@@ -171,15 +172,9 @@ const DB = {
 // Seed default menu on first load if sheet is empty
 // ---------------------------------------------------------------
 async function seedMenuIfEmpty() {
-  if (!DB._ready) {
-    // localStorage fallback — seed if empty
-    const menu = DB._lsGet('menu');
-    if (menu && Object.keys(menu).length) return;
-    // minimal seed via localStorage
-    return;
-  }
+  if (!DB._ready) return;
   try {
-    await DB._post({ action: 'seedMenu' });
+    await DB._send({ action: 'seedMenu' });
   } catch(e) {
     console.warn('Seed failed:', e.message);
   }
