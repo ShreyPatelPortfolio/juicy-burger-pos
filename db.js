@@ -1,11 +1,10 @@
 // db.js — The Juicy Burger
-// Google Sheets backend via Apps Script Web App.
-// ALL requests use GET to avoid CORS preflight issues.
+// All requests use GET to avoid CORS issues with Apps Script.
 // ---------------------------------------------------------------
 // SETUP: Paste your Apps Script Web App URL below.
 // ---------------------------------------------------------------
 
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyfdpm8iUpdBuTb5xPswBM-l2DBxNS7w8k2E3fb5SAsVNaGnMix42us8DjSab1jBRCR/exec"; // ← Your Web App URL
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyfdpm8iUpdBuTb5xPswBM-l2DBxNS7w8k2E3fb5SAsVNaGnMix42us8DjSab1jBRCR/exec";
 
 // ---------------------------------------------------------------
 // Tax rates (Ontario, Canada)
@@ -45,26 +44,21 @@ function showToast(msg, type = '') {
 }
 
 // ---------------------------------------------------------------
-// DB — thin wrapper around the Apps Script Web App
-// Everything goes through GET params to avoid CORS issues.
+// DB — all writes and reads go through GET params
 // Falls back to localStorage if SCRIPT_URL is not set.
 // ---------------------------------------------------------------
 const DB = {
   _ready: !!SCRIPT_URL,
 
-  // ---- Core GET helper (all requests go here) ----------------
+  // ---- Single GET helper — all traffic goes here -------------
   async _get(params) {
     if (!this._ready) return null;
     const url = SCRIPT_URL + '?' + new URLSearchParams(params).toString();
     const res  = await fetch(url);
+    if (!res.ok) throw new Error('Network error ' + res.status);
     const json = await res.json();
-    if (json.error) throw new Error(json.error);
+    if (json && json.error) throw new Error(json.error);
     return json;
-  },
-
-  // ---- Encode an object/array as a JSON GET param ------------
-  async _send(params) {
-    return this._get(params);
   },
 
   // ---- Public API --------------------------------------------
@@ -74,14 +68,14 @@ const DB = {
     if (!this._ready) { this._lsSet(path, value); this._emit(path, value); return; }
     const parts = path.split('/');
     if (parts[0] === 'menu') {
-      return this._send({ action: 'setMenuItem', item: JSON.stringify(value) });
+      return this._get({ action: 'setMenuItem', item: JSON.stringify(value) });
     }
     if (parts[0] === 'orders') {
-      return this._send({ action: 'setOrder', order: JSON.stringify(value) });
+      return this._get({ action: 'setOrder', order: JSON.stringify(value) });
     }
   },
 
-  // Merge fields into an existing order or menu item
+  // Merge fields into an existing record
   async update(path, fields) {
     if (!this._ready) {
       const existing = this._lsGet(path) || {};
@@ -92,11 +86,12 @@ const DB = {
     }
     const parts = path.split('/');
     if (parts[0] === 'orders') {
-      return this._send({ action: 'updateOrder', id: parts[1], fields: JSON.stringify(fields) });
+      // updateOrder merges only the fields you pass — perfect for status changes
+      return this._get({ action: 'updateOrder', id: parts[1], fields: JSON.stringify(fields) });
     }
     if (parts[0] === 'menu') {
-      // For menu updates (e.g. toggling available), fetch current then set merged
-      return this._send({ action: 'setMenuItem', item: JSON.stringify({ ...fields, id: parts[1] }) });
+      // For menu item updates (e.g. toggle available) pass the full merged object
+      return this._get({ action: 'setMenuItem', item: JSON.stringify({ id: parts[1], ...fields }) });
     }
   },
 
@@ -104,26 +99,27 @@ const DB = {
   async get(path) {
     if (!this._ready) return this._lsGet(path);
     const parts = path.split('/');
-    if (parts[0] === 'menu')   return this._send({ action: 'getMenu' });
-    if (parts[0] === 'orders') return this._send({ action: 'getOrders' });
+    if (parts[0] === 'menu')   return this._get({ action: 'getMenu' });
+    if (parts[0] === 'orders') return this._get({ action: 'getOrders' });
     return null;
   },
 
-  // Polling listener — calls callback(data) immediately and every 5s
+  // Polling listener — fires immediately then every 5 s
   on(path, callback) {
-    const fetchAndCall = async () => {
+    const poll = async () => {
       try {
         const data = await this.get(path);
         callback(data || {});
       } catch(e) {
         console.warn('DB.on poll error:', e.message);
+        // Fall back to localStorage snapshot
         callback(this._lsGetAll(path) || this._lsGet(path) || {});
       }
     };
 
-    fetchAndCall();
+    poll(); // immediate first call
 
-    const interval = setInterval(fetchAndCall, 5000);
+    const interval = setInterval(poll, 5000);
     this._intervals = this._intervals || [];
     this._intervals.push(interval);
   },
@@ -138,11 +134,11 @@ const DB = {
       return;
     }
     const parts = path.split('/');
-    if (parts[0] === 'menu')   return this._send({ action: 'deleteMenuItem', id: parts[1] });
-    if (parts[0] === 'orders') return this._send({ action: 'deleteOrder',    id: parts[1] });
+    if (parts[0] === 'menu')   return this._get({ action: 'deleteMenuItem', id: parts[1] });
+    if (parts[0] === 'orders') return this._get({ action: 'deleteOrder',    id: parts[1] });
   },
 
-  // ---- localStorage fallback (demo / no URL set) -------------
+  // ---- localStorage fallback ---------------------------------
   _lsKey(path)  { return 'tjb_' + path.replace(/\//g, '_'); },
   _lsSet(path, value) { localStorage.setItem(this._lsKey(path), JSON.stringify(value)); },
   _lsGet(path)  {
@@ -174,9 +170,9 @@ const DB = {
 async function seedMenuIfEmpty() {
   if (!DB._ready) return;
   try {
-    await DB._send({ action: 'seedMenu' });
+    await DB._get({ action: 'seedMenu' });
   } catch(e) {
-    console.warn('Seed failed:', e.message);
+    console.warn('Seed skipped:', e.message);
   }
 }
 
@@ -185,6 +181,6 @@ async function seedMenuIfEmpty() {
 // ---------------------------------------------------------------
 function initFirebase() {
   if (!SCRIPT_URL) {
-    console.warn('No SCRIPT_URL set in db.js — running in localStorage demo mode (single tab only).');
+    console.warn('No SCRIPT_URL — running in localStorage demo mode (single tab only).');
   }
 }
