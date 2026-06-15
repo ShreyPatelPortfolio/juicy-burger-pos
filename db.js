@@ -1,10 +1,10 @@
 // db.js — The Juicy Burger
-// All requests use GET to avoid CORS issues with Apps Script.
+// Google Sheets backend via Apps Script Web App.
 // ---------------------------------------------------------------
 // SETUP: Paste your Apps Script Web App URL below.
 // ---------------------------------------------------------------
 
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyfdpm8iUpdBuTb5xPswBM-l2DBxNS7w8k2E3fb5SAsVNaGnMix42us8DjSab1jBRCR/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyfdpm8iUpdBuTb5xPswBM-l2DBxNS7w8k2E3fb5SAsVNaGnMix42us8DjSab1jBRCR/exec"; // ← Paste your Web App URL here
 
 // ---------------------------------------------------------------
 // Tax rates (Ontario, Canada)
@@ -44,55 +44,55 @@ function showToast(msg, type = '') {
 }
 
 // ---------------------------------------------------------------
-// DB — all writes and reads go through GET params
+// DB — thin wrapper around the Apps Script Web App
 // Falls back to localStorage if SCRIPT_URL is not set.
 // ---------------------------------------------------------------
 const DB = {
   _ready: !!SCRIPT_URL,
 
-  // ---- Single GET helper — all traffic goes here -------------
+  // ---- Internal fetch helpers --------------------------------
   async _get(params) {
     if (!this._ready) return null;
     const url = SCRIPT_URL + '?' + new URLSearchParams(params).toString();
-    const res  = await fetch(url);
-    if (!res.ok) throw new Error('Network error ' + res.status);
+    const res = await fetch(url);
     const json = await res.json();
-    if (json && json.error) throw new Error(json.error);
+    if (json.error) throw new Error(json.error);
     return json;
   },
 
-  // ---- Public API --------------------------------------------
+  async _post(body) {
+    if (!this._ready) return null;
+    const res = await fetch(SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify(body)
+    });
+    const json = await res.json();
+    if (json.error) throw new Error(json.error);
+    return json;
+  },
 
-  // Save/replace a menu item or order
+  // ---- Public API (mirrors the old Firebase DB wrapper) ------
+
+  // Save/replace a full order or menu item by path
   async set(path, value) {
     if (!this._ready) { this._lsSet(path, value); this._emit(path, value); return; }
     const parts = path.split('/');
-    if (parts[0] === 'menu') {
-      return this._get({ action: 'setMenuItem', item: JSON.stringify(value) });
-    }
-    if (parts[0] === 'orders') {
-      return this._get({ action: 'setOrder', order: JSON.stringify(value) });
-    }
+    if (parts[0] === 'menu')   return this._post({ action: 'setMenuItem', item: value });
+    if (parts[0] === 'orders') return this._post({ action: 'setOrder',    order: value });
   },
 
-  // Merge fields into an existing record
+  // Merge fields into an existing order
   async update(path, fields) {
     if (!this._ready) {
       const existing = this._lsGet(path) || {};
-      const merged   = { ...existing, ...fields };
+      const merged = { ...existing, ...fields };
       this._lsSet(path, merged);
       this._emit(path, merged);
       return;
     }
     const parts = path.split('/');
-    if (parts[0] === 'orders') {
-      // updateOrder merges only the fields you pass — perfect for status changes
-      return this._get({ action: 'updateOrder', id: parts[1], fields: JSON.stringify(fields) });
-    }
-    if (parts[0] === 'menu') {
-      // For menu item updates (e.g. toggle available) pass the full merged object
-      return this._get({ action: 'setMenuItem', item: JSON.stringify({ id: parts[1], ...fields }) });
-    }
+    if (parts[0] === 'orders') return this._post({ action: 'updateOrder', id: parts[1], fields });
+    if (parts[0] === 'menu')   return this._post({ action: 'setMenuItem', item: { ...fields, id: parts[1] } });
   },
 
   // One-time fetch
@@ -104,22 +104,25 @@ const DB = {
     return null;
   },
 
-  // Polling listener — fires immediately then every 5 s
+  // Polling listener — calls callback(data) immediately and every 5s
   on(path, callback) {
-    const poll = async () => {
+    const fetchAndCall = async () => {
       try {
         const data = await this.get(path);
         callback(data || {});
       } catch(e) {
         console.warn('DB.on poll error:', e.message);
-        // Fall back to localStorage snapshot
+        // Fall back to localStorage
         callback(this._lsGetAll(path) || this._lsGet(path) || {});
       }
     };
 
-    poll(); // immediate first call
+    fetchAndCall(); // immediate
 
-    const interval = setInterval(poll, 5000);
+    // Poll every 5 seconds for live updates across terminals
+    const interval = setInterval(fetchAndCall, 5000);
+
+    // Store so callers could clear if needed (not required for basic use)
     this._intervals = this._intervals || [];
     this._intervals.push(interval);
   },
@@ -134,11 +137,11 @@ const DB = {
       return;
     }
     const parts = path.split('/');
-    if (parts[0] === 'menu')   return this._get({ action: 'deleteMenuItem', id: parts[1] });
-    if (parts[0] === 'orders') return this._get({ action: 'deleteOrder',    id: parts[1] });
+    if (parts[0] === 'menu')   return this._post({ action: 'deleteMenuItem', id: parts[1] });
+    if (parts[0] === 'orders') return this._post({ action: 'deleteOrder',    id: parts[1] });
   },
 
-  // ---- localStorage fallback ---------------------------------
+  // ---- localStorage fallback (demo / no URL set) -------------
   _lsKey(path)  { return 'tjb_' + path.replace(/\//g, '_'); },
   _lsSet(path, value) { localStorage.setItem(this._lsKey(path), JSON.stringify(value)); },
   _lsGet(path)  {
@@ -168,11 +171,17 @@ const DB = {
 // Seed default menu on first load if sheet is empty
 // ---------------------------------------------------------------
 async function seedMenuIfEmpty() {
-  if (!DB._ready) return;
+  if (!DB._ready) {
+    // localStorage fallback — seed if empty
+    const menu = DB._lsGet('menu');
+    if (menu && Object.keys(menu).length) return;
+    // minimal seed via localStorage
+    return;
+  }
   try {
-    await DB._get({ action: 'seedMenu' });
+    await DB._post({ action: 'seedMenu' });
   } catch(e) {
-    console.warn('Seed skipped:', e.message);
+    console.warn('Seed failed:', e.message);
   }
 }
 
@@ -181,6 +190,6 @@ async function seedMenuIfEmpty() {
 // ---------------------------------------------------------------
 function initFirebase() {
   if (!SCRIPT_URL) {
-    console.warn('No SCRIPT_URL — running in localStorage demo mode (single tab only).');
+    console.warn('No SCRIPT_URL set in db.js — running in localStorage demo mode (single tab only).');
   }
 }
