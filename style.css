@@ -79,14 +79,19 @@ html, body {
   font-family: 'Inter', sans-serif;
   cursor: pointer;
   border: 1px solid transparent;
-  transition: background 0.12s, transform 0.1s, border-color 0.12s;
+  transition: background 0.12s, transform 0.1s, border-color 0.12s, box-shadow 0.12s;
   text-decoration: none;
   line-height: 1;
   white-space: nowrap;
 }
 .btn:active { transform: scale(0.97); }
-.btn-primary { background: var(--brand-orange); color: #fff; border-color: var(--brand-orange); }
-.btn-primary:hover { background: #e5571a; }
+.btn-primary {
+  background: linear-gradient(135deg, #ff6b1a, #e5500f);
+  color: #fff;
+  border-color: var(--brand-orange);
+  box-shadow: 0 2px 8px rgba(255,107,26,0.25);
+}
+.btn-primary:hover { background: linear-gradient(135deg, #ff7d35, #ff6b1a); box-shadow: 0 4px 14px rgba(255,107,26,0.4); }
 .btn-secondary { background: transparent; color: var(--text-primary); border-color: var(--border-light); }
 .btn-secondary:hover { background: var(--bg-card); }
 .btn-success { background: var(--success); color: #fff; border-color: var(--success); }
@@ -97,7 +102,7 @@ html, body {
 .btn-sm { padding: 0.35rem 0.8rem; font-size: 0.8rem; }
 .btn-lg { padding: 0.85rem 2rem; font-size: 1rem; }
 .btn-block { width: 100%; }
-.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
 
 /* ---- Cards ---- */
 .card {
@@ -145,10 +150,10 @@ html, body {
   color: var(--text-primary);
   font-size: 0.9rem;
   font-family: 'Inter', sans-serif;
-  transition: border-color 0.15s;
+  transition: border-color 0.15s, box-shadow 0.15s;
   outline: none;
 }
-.form-control:focus { border-color: var(--brand-orange); }
+.form-control:focus { border-color: var(--brand-orange); box-shadow: 0 0 0 3px rgba(255,107,26,0.12); }
 .form-control::placeholder { color: var(--text-dim); }
 select.form-control { cursor: pointer; }
 textarea.form-control { resize: vertical; min-height: 70px; }
@@ -182,6 +187,7 @@ textarea.form-control { resize: vertical; min-height: 70px; }
   animation: slideIn 0.2s ease;
   max-width: 320px;
   pointer-events: auto;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
 }
 .toast.success { border-color: var(--success); }
 .toast.error { border-color: var(--danger); }
@@ -189,16 +195,18 @@ textarea.form-control { resize: vertical; min-height: 70px; }
 
 /* ---- Status dot ---- */
 .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
-.status-dot.online { background: var(--success); box-shadow: 0 0 6px var(--success); }
+.status-dot.online { background: var(--success); box-shadow: 0 0 6px var(--success); animation: pulse-dot 2s infinite; }
 .status-dot.offline { background: var(--text-dim); }
+@keyframes pulse-dot { 0%,100%{box-shadow:0 0 4px var(--success);} 50%{box-shadow:0 0 10px var(--success);} }
 
 /* ---- Modal ---- */
 .modal-overlay {
   position: fixed; inset: 0;
-  background: rgba(0,0,0,0.8);
+  background: rgba(0,0,0,0.85);
   z-index: 500;
   display: flex; align-items: center; justify-content: center;
   padding: 1rem;
+  backdrop-filter: blur(4px);
 }
 .modal-overlay.hidden { display: none !important; }
 .modal-box {
@@ -210,6 +218,7 @@ textarea.form-control { resize: vertical; min-height: 70px; }
   width: 100%;
   max-height: 90vh;
   overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
 }
 .modal-title {
   font-family: 'Playfair Display', serif;
@@ -256,3 +265,29 @@ textarea.form-control { resize: vertical; min-height: 70px; }
 }
 .toggle input:checked + .toggle-slider { background: var(--success); }
 .toggle input:checked + .toggle-slider::before { transform: translateX(18px); }
+
+/* ---- Category gradient backgrounds ---- */
+.cat-bg-burgers   { background: linear-gradient(135deg, #3d1800, #5c2500); }
+.cat-bg-sides     { background: linear-gradient(135deg, #1f2d00, #2e4400); }
+.cat-bg-drinks    { background: linear-gradient(135deg, #001e3d, #003060); }
+.cat-bg-desserts  { background: linear-gradient(135deg, #2d001a, #450028); }
+.cat-bg-specials  { background: linear-gradient(135deg, #2d2500, #443800); }
+.cat-bg-nuggets   { background: linear-gradient(135deg, #3a1e00, #5a3200); }
+.cat-bg-extra     { background: linear-gradient(135deg, #1a1a1a, #2e2e2e); }
+.cat-bg-default   { background: linear-gradient(135deg, #2a1200, #3a1f00); }
+
+/* ---- Flame animation for landing ---- */
+@keyframes flicker {
+  0%,100% { transform: scaleY(1) scaleX(1); }
+  25% { transform: scaleY(1.04) scaleX(0.97); }
+  50% { transform: scaleY(0.97) scaleX(1.02); }
+  75% { transform: scaleY(1.02) scaleX(0.98); }
+}
+@keyframes float-up {
+  0%   { transform: translateY(0) rotate(0deg); opacity: 0.7; }
+  100% { transform: translateY(-80px) rotate(30deg); opacity: 0; }
+}
+@keyframes glow-pulse {
+  0%,100% { filter: drop-shadow(0 0 12px rgba(255,107,26,0.5)); }
+  50% { filter: drop-shadow(0 0 24px rgba(255,107,26,0.9)); }
+}

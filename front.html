@@ -37,7 +37,7 @@
   cursor: pointer;
   transition: all 0.12s;
 }
-.view-tab.active { background: var(--brand-orange); border-color: var(--brand-orange); color: #fff; }
+.view-tab.active { background: var(--brand-orange); border-color: var(--brand-orange); color: #fff; box-shadow: 0 2px 8px rgba(255,107,26,0.3); }
 
 .cat-tabs { display: flex; gap: 0.5rem; margin-bottom: 1.25rem; flex-wrap: wrap; }
 .cat-tab {
@@ -52,7 +52,7 @@
   transition: all 0.12s;
 }
 .cat-tab:hover { border-color: var(--border-light); color: var(--text-primary); }
-.cat-tab.active { background: var(--brand-orange); border-color: var(--brand-orange); color: #fff; }
+.cat-tab.active { background: var(--brand-orange); border-color: var(--brand-orange); color: #fff; box-shadow: 0 2px 8px rgba(255,107,26,0.3); }
 
 .menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(185px, 1fr)); gap: 1rem; }
 
@@ -62,31 +62,54 @@
   border-radius: var(--radius-lg);
   overflow: hidden;
   cursor: pointer;
-  transition: border-color 0.12s, transform 0.1s;
+  transition: border-color 0.15s, transform 0.15s cubic-bezier(.34,1.56,.64,1), box-shadow 0.15s;
 }
-.menu-item-card:hover { border-color: var(--brand-orange); transform: translateY(-2px); }
+.menu-item-card:hover { border-color: var(--brand-orange); transform: translateY(-3px); box-shadow: 0 8px 24px rgba(255,107,26,0.15); }
 .menu-item-card.unavailable { opacity: 0.4; pointer-events: none; }
 
 .item-img {
   width: 100%; height: 120px;
-  background: linear-gradient(135deg, #2a1200, #3a1f00);
   display: flex; align-items: center; justify-content: center;
   font-size: 2.8rem; overflow: hidden;
+  position: relative;
 }
 .item-img img { width: 100%; height: 100%; object-fit: cover; }
+
+/* Category-coloured placeholder backgrounds */
+.item-img.cat-burgers   { background: linear-gradient(135deg, #3d1800, #5c2500); }
+.item-img.cat-sides     { background: linear-gradient(135deg, #1f2d00, #2e4400); }
+.item-img.cat-drinks    { background: linear-gradient(135deg, #001e3d, #003060); }
+.item-img.cat-desserts  { background: linear-gradient(135deg, #2d001a, #450028); }
+.item-img.cat-specials  { background: linear-gradient(135deg, #2d2500, #443800); }
+.item-img.cat-chicken-nuggets { background: linear-gradient(135deg, #3a1e00, #5a3200); }
+.item-img.cat-extra     { background: linear-gradient(135deg, #1a1a1a, #2e2e2e); }
+.item-img.cat-default   { background: linear-gradient(135deg, #2a1200, #3a1f00); }
+
+/* Subtle inner glow on item images */
+.item-img::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 100%, rgba(255,107,26,0.07), transparent 70%);
+  pointer-events: none;
+}
+
 .item-info { padding: 0.875rem; }
 .item-name { font-weight: 600; font-size: 0.88rem; margin-bottom: 0.25rem; }
-.item-desc { font-size: 0.73rem; color: var(--text-muted); margin-bottom: 0.6rem; line-height: 1.4; }
+.item-desc { font-size: 0.73rem; color: var(--text-muted); margin-bottom: 0.6rem; line-height: 1.4; min-height: 2.1em; }
 .item-footer { display: flex; align-items: center; justify-content: space-between; }
 .item-price { font-weight: 700; color: var(--brand-amber); font-size: 1rem; }
 .item-add-btn {
-  width: 28px; height: 28px; border-radius: 50%;
-  background: var(--brand-orange); color: #fff; border: none;
-  font-size: 1.2rem; cursor: pointer;
+  width: 30px; height: 30px; border-radius: 50%;
+  background: linear-gradient(135deg, #ff6b1a, #e5500f);
+  color: #fff; border: none;
+  font-size: 1.25rem; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
-  transition: background 0.12s, transform 0.1s; flex-shrink: 0; line-height: 1;
+  transition: transform 0.15s cubic-bezier(.34,1.56,.64,1), box-shadow 0.12s;
+  flex-shrink: 0; line-height: 1;
+  box-shadow: 0 2px 8px rgba(255,107,26,0.3);
 }
-.item-add-btn:hover { background: #e5571a; }
+.item-add-btn:hover { transform: scale(1.15); box-shadow: 0 4px 14px rgba(255,107,26,0.5); }
 .item-add-btn:active { transform: scale(0.88); }
 
 .order-header {
@@ -94,6 +117,7 @@
   border-bottom: 1px solid var(--border);
   display: flex; align-items: center; justify-content: space-between;
   flex-shrink: 0;
+  background: linear-gradient(180deg, #281200, var(--bg-panel));
 }
 .order-title { font-family: 'Playfair Display', serif; color: var(--brand-amber); font-size: 1.05rem; }
 .order-id-label { font-size: 0.7rem; color: var(--text-dim); margin-top: 1px; }
@@ -103,7 +127,7 @@
 .order-line:last-child { border-bottom: none; }
 .order-line-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; }
 .order-line-name { font-size: 0.875rem; font-weight: 500; flex: 1; }
-.order-line-price { font-size: 0.875rem; color: var(--brand-amber); white-space: nowrap; flex-shrink: 0; }
+.order-line-price { font-size: 0.875rem; color: var(--brand-amber); white-space: nowrap; flex-shrink: 0; font-weight: 600; }
 .order-line-mods { font-size: 0.72rem; color: var(--danger); margin-top: 0.2rem; }
 .qty-controls { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.35rem; }
 .qty-btn {
@@ -117,26 +141,28 @@
 .edit-mods-btn {
   font-size: 0.7rem; color: var(--text-muted); background: none;
   border: 1px solid var(--border); border-radius: 4px; padding: 1px 6px;
-  cursor: pointer; margin-left: auto; font-family: 'Inter', sans-serif; transition: border-color 0.1s;
+  cursor: pointer; margin-left: auto; font-family: 'Inter', sans-serif; transition: border-color 0.1s, color 0.1s;
 }
 .edit-mods-btn:hover { border-color: var(--brand-orange); color: var(--brand-amber); }
 
 .order-totals {
   padding: 0.875rem 1.25rem; border-top: 1px solid var(--border);
-  background: #1a0800; flex-shrink: 0;
+  background: #160700; flex-shrink: 0;
 }
 .totals-row { display: flex; justify-content: space-between; font-size: 0.82rem; padding: 0.18rem 0; color: var(--text-muted); }
 .totals-row.grand { font-size: 1.1rem; font-weight: 700; color: var(--text-primary); padding-top: 0.5rem; margin-top: 0.35rem; border-top: 1px solid var(--border); }
+.totals-row.grand span:last-child { color: var(--brand-amber); }
 .order-actions { padding: 0.875rem 1.25rem; display: flex; flex-direction: column; gap: 0.5rem; flex-shrink: 0; border-top: 1px solid var(--border); }
 .kitchen-banner { background: rgba(46,204,113,0.1); border: 1px solid rgba(46,204,113,0.3); border-radius: var(--radius-sm); padding: 0.6rem 0.875rem; font-size: 0.82rem; color: #5dde8e; text-align: center; }
 
 .payment-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
 .payment-option {
   background: var(--bg-card); border: 2px solid var(--border); border-radius: var(--radius-md);
-  padding: 1.25rem; text-align: center; cursor: pointer; transition: border-color 0.15s, background 0.15s;
+  padding: 1.25rem; text-align: center; cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, transform 0.15s cubic-bezier(.34,1.56,.64,1);
 }
-.payment-option:hover { border-color: var(--brand-orange); background: var(--bg-card-hover); }
-.payment-option .pay-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+.payment-option:hover { border-color: var(--brand-orange); background: var(--bg-card-hover); transform: translateY(-2px); }
+.payment-option .pay-icon { font-size: 2.2rem; margin-bottom: 0.5rem; }
 .payment-option .pay-label { font-size: 0.875rem; font-weight: 600; }
 
 .ingredient-list { display: flex; flex-direction: column; gap: 0.4rem; max-height: 260px; overflow-y: auto; }
@@ -168,13 +194,17 @@
 <body>
 <div class="pos-layout">
   <header class="site-header">
-    <a href="index.html" class="logo">🍔 The Juicy Burger</a>
+    <a href="index.html" class="logo">
+      <span>🍔</span> The Juicy Burger
+    </a>
     <div style="display:flex;align-items:center;gap:0.75rem;">
       <span class="status-dot online" id="connectionDot"></span>
+      <span style="font-size:0.78rem;color:var(--text-muted);">Live</span>
       <span class="terminal-label">Front of House</span>
     </div>
   </header>
 
+  <!-- Menu Panel -->
   <div class="menu-panel">
     <div class="view-tabs">
       <button class="view-tab active" id="btnMenuView" onclick="switchView('menu')">🍔 Menu</button>
@@ -193,6 +223,7 @@
     </div>
   </div>
 
+  <!-- Order Panel -->
   <div class="order-panel">
     <div class="order-header">
       <div>
@@ -221,7 +252,7 @@
   </div>
 </div>
 
-<!-- Ingredient Modal -->
+<!-- Ingredient / Customise Modal -->
 <div class="modal-overlay hidden" id="ingredientModal">
   <div class="modal-box">
     <div class="modal-title" id="modalItemName">Customize Item</div>
@@ -244,11 +275,17 @@
     <div class="modal-title">Collect Payment</div>
     <div style="text-align:center;margin-bottom:1.5rem;">
       <div style="font-size:2.5rem;font-weight:700;color:var(--brand-amber);" id="paymentTotalDisplay">$0.00</div>
-      <div style="font-size:0.8rem;color:var(--text-muted);margin-top:0.25rem;">Total including tax</div>
+      <div style="font-size:0.8rem;color:var(--text-muted);margin-top:0.25rem;">Total including GST &amp; PST</div>
     </div>
     <div class="payment-grid">
-      <div class="payment-option" onclick="markPayment('cash')"><div class="pay-icon">💵</div><div class="pay-label">Cash</div></div>
-      <div class="payment-option" onclick="markPayment('card')"><div class="pay-icon">💳</div><div class="pay-label">Card</div></div>
+      <div class="payment-option" onclick="markPayment('cash')">
+        <div class="pay-icon">💵</div>
+        <div class="pay-label">Cash</div>
+      </div>
+      <div class="payment-option" onclick="markPayment('card')">
+        <div class="pay-icon">💳</div>
+        <div class="pay-label">Card</div>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closePaymentModal()">Cancel</button>
@@ -295,41 +332,71 @@ window.addEventListener('DOMContentLoaded', () => {
 function renderCatTabs() {
   const cats = ['All', ...new Set(Object.values(menuItems).map(i => i.category))];
   document.getElementById('catTabs').innerHTML = cats.map(c =>
-    `<button class="cat-tab ${c === activeCategory ? 'active' : ''}" onclick="setCategory('${c}')">${c}</button>`
+    `<button class="cat-tab ${c === activeCategory ? 'active' : ''}" onclick="setCategory('${c}')">${catEmoji(c)} ${c}</button>`
   ).join('');
 }
 
 function setCategory(cat) {
   activeCategory = cat;
-  document.querySelectorAll('.cat-tab').forEach(t => t.classList.toggle('active', t.textContent === cat));
+  document.querySelectorAll('.cat-tab').forEach(t => t.classList.toggle('active', t.textContent.includes(cat) && t.textContent.trim().endsWith(cat)));
   renderMenuGrid();
+}
+
+// Matches all menu categories including seeded ones
+function catEmoji(cat) {
+  const map = {
+    'All': '🍽️',
+    'Burgers': '🍔',
+    'Sides': '🍟',
+    'Drinks': '🥤',
+    'Desserts': '🍦',
+    'Specials': '⭐',
+    'Chicken Nuggets': '🍗',
+    'Extra': '➕'
+  };
+  return map[cat] || '🍽️';
+}
+
+function catCssClass(cat) {
+  const map = {
+    'Burgers': 'cat-burgers',
+    'Sides': 'cat-sides',
+    'Drinks': 'cat-drinks',
+    'Desserts': 'cat-desserts',
+    'Specials': 'cat-specials',
+    'Chicken Nuggets': 'cat-chicken-nuggets',
+    'Extra': 'cat-extra'
+  };
+  return map[cat] || 'cat-default';
 }
 
 function renderMenuGrid() {
   const grid = document.getElementById('menuGrid');
   let items = Object.values(menuItems);
   if (activeCategory !== 'All') items = items.filter(i => i.category === activeCategory);
-  if (!items.length) { grid.innerHTML = '<div style="color:var(--text-dim);font-size:0.85rem;padding:1rem;">No items in this category.</div>'; return; }
+  if (!items.length) {
+    grid.innerHTML = '<div style="color:var(--text-dim);font-size:0.85rem;padding:1rem;">No items in this category.</div>';
+    return;
+  }
   grid.innerHTML = items.map(item => {
     const emoji = catEmoji(item.category);
-    const imgContent = item.image ? `<img src="${item.image}" alt="${item.name}" onerror="this.parentElement.innerHTML='${emoji}'">` : emoji;
+    const bgClass = catCssClass(item.category);
+    const imgContent = item.image
+      ? `<img src="${item.image}" alt="${item.name}" onerror="this.parentElement.innerHTML='<span style=\\'font-size:2.5rem\\'>${emoji}</span>'">`
+      : `<span style="font-size:2.5rem;">${emoji}</span>`;
     const avail = item.available !== false;
     return `<div class="menu-item-card ${avail ? '' : 'unavailable'}" onclick="openItemModal('${item.id}')">
-      <div class="item-img">${imgContent}</div>
+      <div class="item-img ${bgClass}">${imgContent}</div>
       <div class="item-info">
         <div class="item-name">${item.name}</div>
         <div class="item-desc">${item.description || ''}</div>
         <div class="item-footer">
           <span class="item-price">${formatCAD(item.price)}</span>
-          <button class="item-add-btn" onclick="event.stopPropagation();quickAdd('${item.id}')">+</button>
+          <button class="item-add-btn" onclick="event.stopPropagation();quickAdd('${item.id}')" title="Quick add">+</button>
         </div>
       </div>
     </div>`;
   }).join('');
-}
-
-function catEmoji(cat) {
-  return { Burgers:'🍔', Sides:'🍟', Drinks:'🥤', Desserts:'🍦', Specials:'⭐' }[cat] || '🍽️';
 }
 
 function quickAdd(itemId) {
@@ -353,7 +420,10 @@ function openItemModal(itemId) {
 
 function renderIngredientList() {
   const list = document.getElementById('ingredientList');
-  if (!pendingIngredients.length) { list.innerHTML = '<div style="color:var(--text-muted);font-size:0.85rem;padding:0.5rem;">No customizable ingredients.</div>'; return; }
+  if (!pendingIngredients.length) {
+    list.innerHTML = '<div style="color:var(--text-muted);font-size:0.85rem;padding:0.5rem;">No customizable ingredients.</div>';
+    return;
+  }
   list.innerHTML = pendingIngredients.map((ing, i) =>
     `<label class="ingredient-item" id="ing_wrap_${i}">
       <input type="checkbox" id="ing_${i}" checked onchange="toggleIngredient(${i}, this.checked)">
@@ -504,8 +574,8 @@ function openPaymentModal() {
 }
 
 async function markPayment(method) {
-  const paidAt   = Date.now();
-  const orderId  = currentOrder.id;
+  const paidAt  = Date.now();
+  const orderId = currentOrder.id;
   closePaymentModal();
   try {
     await DB.update(`orders/${orderId}`, { paymentStatus: 'paid', paymentMethod: method, paidAt });
@@ -514,7 +584,6 @@ async function markPayment(method) {
     return;
   }
   showToast(`✅ Payment recorded: ${method.charAt(0).toUpperCase() + method.slice(1)}`, 'success');
-  // Immediately reset to a fresh order
   currentOrder = { id: generateOrderId(), items: [], status: 'draft' };
   updateOrderIdLabel();
   renderOrderPanel();
@@ -526,7 +595,8 @@ function closePaymentModal() { document.getElementById('paymentModal').classList
 function listenToOrders() {
   DB.on('orders', (data) => {
     allOrders = data || {};
-    document.getElementById('activeOrderCount').textContent = Object.keys(allOrders).length ? `(${Object.keys(allOrders).length})` : '';
+    const count = Object.keys(allOrders).length;
+    document.getElementById('activeOrderCount').textContent = count ? `(${count})` : '';
     renderPastOrders();
   });
 }
@@ -534,7 +604,10 @@ function listenToOrders() {
 function renderPastOrders() {
   const list = document.getElementById('pastOrdersList');
   const orders = Object.values(allOrders).sort((a, b) => (b.sentAt || 0) - (a.sentAt || 0));
-  if (!orders.length) { list.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><p>No orders yet</p></div>'; return; }
+  if (!orders.length) {
+    list.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><p>No orders yet</p></div>';
+    return;
+  }
   list.innerHTML = orders.map(o => {
     const time = new Date(o.sentAt).toLocaleString('en-CA', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
     const statusBadge = { pending:'<span class="badge badge-warning">Pending</span>', prepping:'<span class="badge badge-info">Prepping</span>', done:'<span class="badge badge-success">Done</span>', draft:'<span class="badge badge-muted">Draft</span>' }[o.status] || '';

@@ -9,59 +9,124 @@
 .kitchen-layout { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 
 .stats-bar {
-  background: #160700; border-bottom: 1px solid var(--border);
-  padding: 0.5rem 1.25rem; display: flex; gap: 2rem; align-items: center;
-  font-size: 0.82rem; flex-shrink: 0; overflow-x: auto;
+  background: #160700;
+  border-bottom: 1px solid var(--border);
+  padding: 0 1.25rem;
+  height: 48px;
+  display: flex;
+  gap: 0;
+  align-items: stretch;
+  flex-shrink: 0;
+  overflow-x: auto;
 }
-.stat-item { display: flex; align-items: center; gap: 0.5rem; white-space: nowrap; }
-.stat-val { font-weight: 700; }
+.stat-item {
+  display: flex; align-items: center; gap: 0.6rem;
+  padding: 0 1.25rem;
+  font-size: 0.82rem;
+  white-space: nowrap;
+  border-right: 1px solid var(--border);
+  position: relative;
+}
+.stat-item:last-child { border-right: none; margin-left: auto; }
+.stat-val { font-weight: 700; font-size: 1rem; }
 .stat-val.orange { color: var(--brand-amber); }
-.stat-val.blue { color: #6db8e8; }
-.stat-val.green { color: #5dde8e; }
+.stat-val.blue   { color: #6db8e8; }
+.stat-val.green  { color: #5dde8e; }
+
+/* Glowing stat indicator bar at top of stats-bar */
+.stat-bar-glow {
+  position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.stat-item:hover .stat-bar-glow { opacity: 1; }
+.stat-item:nth-child(1) .stat-bar-glow { background: var(--warning); }
+.stat-item:nth-child(2) .stat-bar-glow { background: var(--info); }
+.stat-item:nth-child(3) .stat-bar-glow { background: var(--success); }
 
 .kitchen-board { flex: 1; overflow-y: auto; padding: 1.25rem; }
 .board-columns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; min-height: 100%; align-items: start; }
 
 .col-header {
-  padding: 0.55rem 1rem; border-radius: var(--radius-md); text-align: center;
+  padding: 0.6rem 1rem; border-radius: var(--radius-md); text-align: center;
   font-size: 0.72rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
   margin-bottom: 0.75rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem;
 }
-.col-header.pending  { background: rgba(243,156,18,0.12); color: #f5b942; border: 1px solid rgba(243,156,18,0.25); }
-.col-header.prepping { background: rgba(52,152,219,0.12); color: #6db8e8; border: 1px solid rgba(52,152,219,0.25); }
-.col-header.done     { background: rgba(46,204,113,0.12); color: #5dde8e; border: 1px solid rgba(46,204,113,0.25); }
-.count-badge { background: rgba(255,255,255,0.12); border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; }
+.col-header.pending  { background: rgba(243,156,18,0.1); color: #f5b942; border: 1px solid rgba(243,156,18,0.25); }
+.col-header.prepping { background: rgba(52,152,219,0.1); color: #6db8e8; border: 1px solid rgba(52,152,219,0.25); }
+.col-header.done     { background: rgba(46,204,113,0.1); color: #5dde8e; border: 1px solid rgba(46,204,113,0.25); }
+.count-badge {
+  background: rgba(255,255,255,0.1);
+  border-radius: 50%; min-width: 22px; height: 22px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.7rem; font-weight: 700;
+}
 .board-col { display: flex; flex-direction: column; gap: 0.875rem; }
 
-.order-ticket { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; animation: ticketIn 0.2s ease; }
-@keyframes ticketIn { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }
+/* Ticket */
+.order-ticket {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  animation: ticketIn 0.25s cubic-bezier(.34,1.56,.64,1);
+  transition: box-shadow 0.2s;
+}
+.order-ticket:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+@keyframes ticketIn { from { opacity:0; transform:translateY(-10px) scale(0.97); } to { opacity:1; transform:translateY(0) scale(1); } }
+
 .order-ticket.pending  { border-left: 3px solid var(--warning); }
 .order-ticket.prepping { border-left: 3px solid var(--info); }
-.order-ticket.done     { border-left: 3px solid var(--success); opacity: 0.65; }
+.order-ticket.done     { border-left: 3px solid var(--success); opacity: 0.6; }
 
-.ticket-header { padding: 0.7rem 1rem; background: #1a0a00; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); }
-.ticket-order-id { font-weight: 700; font-size: 0.9rem; }
+/* Ticket header gradient based on status */
+.ticket-header {
+  padding: 0.7rem 1rem;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+}
+.order-ticket.pending  .ticket-header { background: linear-gradient(135deg, #2a1800, #1a0a00); }
+.order-ticket.prepping .ticket-header { background: linear-gradient(135deg, #001428, #1a0a00); }
+.order-ticket.done     .ticket-header { background: linear-gradient(135deg, #001a08, #1a0a00); }
+
+.ticket-order-id { font-weight: 700; font-size: 0.9rem; letter-spacing: 0.5px; }
 .ticket-time { font-size: 0.7rem; color: var(--text-muted); margin-top: 2px; }
+
 .ticket-items { padding: 0.625rem 1rem; }
 .ticket-line { padding: 0.45rem 0; border-bottom: 1px solid var(--border); font-size: 0.875rem; }
 .ticket-line:last-child { border-bottom: none; }
 .ticket-line-top { display: flex; align-items: center; gap: 0.4rem; }
 .ticket-line-name { font-weight: 600; }
-.ticket-line-qty { background: var(--brand-orange); color: #fff; font-size: 0.7rem; font-weight: 700; padding: 1px 7px; border-radius: 20px; }
+.ticket-line-qty {
+  background: var(--brand-orange); color: #fff;
+  font-size: 0.7rem; font-weight: 700; padding: 1px 7px; border-radius: 20px;
+}
 .ticket-line-mods { font-size: 0.72rem; color: var(--danger); margin-top: 0.15rem; }
 .ticket-line-note { font-size: 0.72rem; color: var(--text-muted); margin-top: 0.1rem; }
-.ticket-footer { padding: 0.625rem 1rem; border-top: 1px solid var(--border); }
+
+.ticket-footer { padding: 0.625rem 1rem; border-top: 1px solid var(--border); background: rgba(0,0,0,0.15); }
 .ticket-payment { font-size: 0.75rem; margin-bottom: 0.3rem; }
 .ticket-total { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.5rem; }
 .ticket-actions { display: flex; gap: 0.4rem; flex-wrap: wrap; }
 
-.elapsed { font-size: 0.68rem; font-weight: 700; padding: 2px 8px; border-radius: 20px; letter-spacing: 0.5px; white-space: nowrap; }
-.elapsed.normal  { background: rgba(46,204,113,0.15); color: #5dde8e; }
-.elapsed.medium  { background: rgba(243,156,18,0.15); color: #f5b942; }
-.elapsed.urgent  { background: rgba(231,76,60,0.2); color: #f1705e; animation: pulse 1s infinite; }
-@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
+/* Elapsed badge */
+.elapsed {
+  font-size: 0.68rem; font-weight: 700; padding: 3px 9px; border-radius: 20px;
+  letter-spacing: 0.5px; white-space: nowrap;
+}
+.elapsed.normal  { background: rgba(46,204,113,0.15); color: #5dde8e; border: 1px solid rgba(46,204,113,0.25); }
+.elapsed.medium  { background: rgba(243,156,18,0.15); color: #f5b942; border: 1px solid rgba(243,156,18,0.25); }
+.elapsed.urgent  { background: rgba(231,76,60,0.2); color: #f1705e; border: 1px solid rgba(231,76,60,0.3); animation: pulse-urgent 1s infinite; }
+@keyframes pulse-urgent { 0%,100%{opacity:1;} 50%{opacity:0.6;} }
 
-.empty-col { text-align: center; color: var(--text-dim); font-size: 0.8rem; padding: 2rem 0.5rem; }
+/* Flame icon animates on prepping column */
+.flame-icon { display: inline-block; animation: flicker 1.5s ease-in-out infinite; }
+
+.empty-col { text-align: center; color: var(--text-dim); font-size: 0.8rem; padding: 2.5rem 0.5rem; }
+.empty-col .empty-col-icon { font-size: 2rem; opacity: 0.3; display: block; margin-bottom: 0.5rem; }
+
+/* Sync dot */
+#refreshDot { transition: color 0.3s; }
 
 @media (max-width: 900px) { .board-columns { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 600px) { .board-columns { grid-template-columns: 1fr; } }
@@ -73,34 +138,58 @@
     <a href="index.html" class="logo">🍔 The Juicy Burger</a>
     <div style="display:flex;align-items:center;gap:0.75rem;">
       <span class="status-dot online" id="connDot"></span>
-      <span style="font-size:0.78rem;color:var(--text-muted)" id="connLabel">Live</span>
+      <span style="font-size:0.78rem;color:var(--text-muted);" id="connLabel">Live</span>
       <span class="terminal-label" style="background:#3498db;">Kitchen</span>
     </div>
   </header>
 
   <div class="stats-bar">
-    <div class="stat-item">⏳ <span class="stat-val orange" id="statPending">0</span> Pending</div>
-    <div class="stat-item">🔥 <span class="stat-val blue" id="statPrepping">0</span> Prepping</div>
-    <div class="stat-item">✅ <span class="stat-val green" id="statDone">0</span> Done</div>
-    <div class="stat-item" style="margin-left:auto;">
-      <span style="font-size:0.72rem;color:var(--text-dim);" id="refreshDot">●</span>
+    <div class="stat-item">
+      <div class="stat-bar-glow"></div>
+      ⏳ <span class="stat-val orange" id="statPending">0</span> Pending
+    </div>
+    <div class="stat-item">
+      <div class="stat-bar-glow"></div>
+      🔥 <span class="stat-val blue" id="statPrepping">0</span> Prepping
+    </div>
+    <div class="stat-item">
+      <div class="stat-bar-glow"></div>
+      ✅ <span class="stat-val green" id="statDone">0</span> Done
+    </div>
+    <div class="stat-item">
+      <span id="refreshDot" style="color:var(--text-dim);">●</span>
       <span style="color:var(--text-dim);font-size:0.72rem;">auto-sync</span>
     </div>
   </div>
 
   <div class="kitchen-board">
     <div class="board-columns">
+      <!-- Pending Column -->
       <div>
-        <div class="col-header pending">⏳ New Orders <span class="count-badge" id="pendingCount">0</span></div>
-        <div class="board-col" id="pendingCol"><div class="empty-col">No pending orders</div></div>
+        <div class="col-header pending">
+          ⏳ New Orders <span class="count-badge" id="pendingCount">0</span>
+        </div>
+        <div class="board-col" id="pendingCol">
+          <div class="empty-col"><span class="empty-col-icon">📭</span>No pending orders</div>
+        </div>
       </div>
+      <!-- Prepping Column -->
       <div>
-        <div class="col-header prepping">🔥 Prepping <span class="count-badge" id="preppingCount">0</span></div>
-        <div class="board-col" id="preppingCol"><div class="empty-col">Nothing in prep</div></div>
+        <div class="col-header prepping">
+          <span class="flame-icon">🔥</span> Prepping <span class="count-badge" id="preppingCount">0</span>
+        </div>
+        <div class="board-col" id="preppingCol">
+          <div class="empty-col"><span class="empty-col-icon">🍳</span>Nothing in prep</div>
+        </div>
       </div>
+      <!-- Done Column -->
       <div>
-        <div class="col-header done">✅ Done <span class="count-badge" id="doneCount">0</span></div>
-        <div class="board-col" id="doneCol"><div class="empty-col">No completed orders</div></div>
+        <div class="col-header done">
+          ✅ Done <span class="count-badge" id="doneCount">0</span>
+        </div>
+        <div class="board-col" id="doneCol">
+          <div class="empty-col"><span class="empty-col-icon">🎉</span>No completed orders</div>
+        </div>
       </div>
     </div>
   </div>
@@ -128,7 +217,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // Blink sync dot
     const dot = document.getElementById('refreshDot');
     dot.style.color = 'var(--brand-orange)';
-    setTimeout(() => dot.style.color = 'var(--text-dim)', 400);
+    setTimeout(() => dot.style.color = 'var(--text-dim)', 500);
   });
 
   setInterval(updateTimers, 20000);
@@ -151,14 +240,16 @@ function renderBoard() {
   document.getElementById('preppingCount').textContent = prepping.length;
   document.getElementById('doneCount').textContent     = done.length;
 
-  renderCol('pendingCol',  pending,          'No pending orders');
-  renderCol('preppingCol', prepping,         'Nothing in prep');
-  renderCol('doneCol',     done.slice(0,12), 'No completed orders');
+  renderCol('pendingCol',  pending,          '📭', 'No pending orders');
+  renderCol('preppingCol', prepping,         '🍳', 'Nothing in prep');
+  renderCol('doneCol',     done.slice(0,12), '🎉', 'No completed orders');
 }
 
-function renderCol(colId, orders, emptyMsg) {
+function renderCol(colId, orders, icon, emptyMsg) {
   const col = document.getElementById(colId);
-  col.innerHTML = orders.length ? orders.map(renderTicket).join('') : `<div class="empty-col">${emptyMsg}</div>`;
+  col.innerHTML = orders.length
+    ? orders.map(renderTicket).join('')
+    : `<div class="empty-col"><span class="empty-col-icon">${icon}</span>${emptyMsg}</div>`;
 }
 
 function renderTicket(o) {
@@ -168,7 +259,7 @@ function renderTicket(o) {
   const payBadge = o.paymentStatus === 'paid'
     ? `<span style="color:var(--success);font-weight:600;">💳 Paid${o.paymentMethod ? ' · ' + o.paymentMethod : ''}</span>`
     : `<span style="color:var(--warning);">⏳ Unpaid</span>`;
-  const actions  = o.status === 'pending'
+  const actions = o.status === 'pending'
     ? `<button class="btn btn-primary btn-sm" onclick="setStatus('${o.id}','prepping')">🔥 Start Prep</button>`
     : o.status === 'prepping'
     ? `<button class="btn btn-success btn-sm" onclick="setStatus('${o.id}','done')">✅ Done</button>
@@ -177,7 +268,10 @@ function renderTicket(o) {
 
   return `<div class="order-ticket ${o.status}" id="ticket_${o.id}">
     <div class="ticket-header">
-      <div><div class="ticket-order-id">${o.id}</div><div class="ticket-time">${timeStr}</div></div>
+      <div>
+        <div class="ticket-order-id">${o.id}</div>
+        <div class="ticket-time">${timeStr}</div>
+      </div>
       <span class="elapsed ${elClass}" data-sent="${o.sentAt}">${elapsed}</span>
     </div>
     <div class="ticket-items">
@@ -193,7 +287,7 @@ function renderTicket(o) {
     </div>
     <div class="ticket-footer">
       <div class="ticket-payment">${payBadge}</div>
-      <div class="ticket-total">Total: <strong>${formatCAD(o.total || 0)}</strong></div>
+      <div class="ticket-total">Total: <strong style="color:var(--brand-amber);">${formatCAD(o.total || 0)}</strong></div>
       <div class="ticket-actions">${actions}</div>
     </div>
   </div>`;

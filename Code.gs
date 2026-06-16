@@ -3,16 +3,6 @@
 //
 // Menu actions  → doGet()  (GET, avoids CORS issues)
 // Order actions → doPost() (POST, handles large payloads)
-//
-// One-time deploy — never needs redeploying for menu changes.
-// ============================================================
-//
-// SHEET SETUP:
-//   Sheet 1 tab name → "Menu"
-//   Sheet 2 tab name → "Orders"
-//
-// Menu columns:  A:id  B:name  C:category  D:price  E:description  F:image  G:available  H:ingredients
-// Order columns: A:id  B:sentAt  C:status  D:paymentStatus  E:paymentMethod  F:paidAt  G:subtotal  H:gst  I:pst  J:total  K:items
 // ============================================================
 
 var SS = SpreadsheetApp.getActiveSpreadsheet();
@@ -23,38 +13,28 @@ function makeResponse(data) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
-// ============================================================
-// doGet — menu reads + menu writes + seed
-// ============================================================
 function doGet(e) {
   try {
     var p      = e.parameter || {};
     var action = p.action    || '';
-
     if (action === 'getMenu')        return makeResponse(getMenu());
     if (action === 'setMenuItem')    return makeResponse(setMenuItem(safeParseJson(p.item, null)));
     if (action === 'deleteMenuItem') return makeResponse(deleteMenuItem(p.id));
     if (action === 'getOrders')      return makeResponse(getOrders());
     if (action === 'seedMenu')       return makeResponse(seedMenuIfEmpty());
-
     return makeResponse({ error: 'Unknown GET action: ' + action });
   } catch(err) {
     return makeResponse({ error: err.toString() });
   }
 }
 
-// ============================================================
-// doPost — order writes (large payloads need POST)
-// ============================================================
 function doPost(e) {
   try {
     var data   = JSON.parse(e.postData.contents);
     var action = data.action || '';
-
     if (action === 'setOrder')    return makeResponse(setOrder(data.order));
     if (action === 'updateOrder') return makeResponse(updateOrder(data.id, data.fields));
     if (action === 'deleteOrder') return makeResponse(deleteOrder(data.id));
-
     return makeResponse({ error: 'Unknown POST action: ' + action });
   } catch(err) {
     return makeResponse({ error: err.toString() });
@@ -219,11 +199,11 @@ function deleteOrder(id) {
 function orderToRow(o) {
   return [
     String(o.id),
-    o.sentAt  ? new Date(typeof o.sentAt  === 'number' ? o.sentAt  : Number(o.sentAt))  : '',
+    o.sentAt  ? new Date(typeof o.sentAt  === 'number' ? o.sentAt  : Number(o.sentAt)) : '',
     String(o.status        || 'pending'),
     String(o.paymentStatus || 'unpaid'),
     String(o.paymentMethod || ''),
-    o.paidAt  ? new Date(typeof o.paidAt  === 'number' ? o.paidAt  : Number(o.paidAt))  : '',
+    o.paidAt  ? new Date(typeof o.paidAt  === 'number' ? o.paidAt  : Number(o.paidAt)) : '',
     parseFloat(o.subtotal) || 0,
     parseFloat(o.gst)      || 0,
     parseFloat(o.pst)      || 0,
@@ -249,7 +229,8 @@ function getOrCreateSheet(name, headers) {
 }
 
 // ============================================================
-// SEED
+// SEED — your exact menu with readable name-based IDs
+// Only runs if Menu sheet has zero data rows
 // ============================================================
 function seedMenuIfEmpty() {
   var sheet = SS.getSheetByName('Menu');
@@ -260,17 +241,19 @@ function seedMenuIfEmpty() {
     var rows = sheet.getDataRange().getValues();
     if (rows.length > 1) return { ok: true, seeded: false };
   }
+
   var defaults = [
-    ['item_classic','Classic Smash Burger','Burgers',14.99,'Double smash patty, American cheese, pickles, onion, special sauce','',true,'["Double Smash Patty","American Cheese","Pickles","Onion","Special Sauce","Brioche Bun"]'],
-    ['item_bbq','Smoky BBQ Stack','Burgers',16.99,'Beef patty, cheddar, crispy onion rings, BBQ sauce, bacon','',true,'["Beef Patty","Cheddar Cheese","Crispy Onion Rings","BBQ Sauce","Bacon","Brioche Bun"]'],
-    ['item_truffle','Truffle Mushroom Burger','Burgers',18.99,'Beef patty, sautéed mushrooms, truffle aioli, Swiss cheese, arugula','',true,'["Beef Patty","Sautéed Mushrooms","Truffle Aioli","Swiss Cheese","Arugula","Pretzel Bun"]'],
-    ['item_spicy','Inferno Burger','Burgers',15.99,'Double patty, jalapeños, pepper jack, sriracha mayo, ghost pepper sauce','',true,'["Double Beef Patty","Jalapeños","Pepper Jack Cheese","Sriracha Mayo","Ghost Pepper Sauce","Brioche Bun"]'],
-    ['item_veggie','Garden Smash','Burgers',13.99,'Smashed plant patty, vegan cheese, lettuce, tomato, avocado, chipotle mayo','',true,'["Plant-Based Patty","Vegan Cheese","Lettuce","Tomato","Avocado","Chipotle Mayo","Brioche Bun"]'],
-    ['item_fries','Crispy Smash Fries','Sides',5.99,'Hand-cut fries, seasoned with smash seasoning','',true,'["Hand-Cut Potatoes","Smash Seasoning","Sea Salt"]'],
-    ['item_poutine','Juicy Poutine','Sides',8.99,'Fries, cheese curds, gravy','',true,'["Fries","Cheese Curds","Beef Gravy"]'],
-    ['item_shake','Smash Shake','Drinks',7.99,'Thick milkshake — vanilla, chocolate, or strawberry','',true,'["Whole Milk Ice Cream","Choice of Flavour","Whipped Cream"]'],
-    ['item_soda','Fountain Soda','Drinks',3.49,'Pepsi, Diet Pepsi, 7UP, Orange Crush, Ginger Ale','',true,'["Choice of Soda","Ice"]']
+    ['item_classic_smash_burger', 'Classic Smash Burger', 'Burgers', 9.99, 'Double smash patty, American cheese, pickles, onion, special sauce', '', true, '["Double Smash Patty","American Cheese","Pickles","Onion","Special Sauce","Brioche Bun"]'],
+    ['item_crispy_smash_fries', 'Crispy Smash Fries', 'Sides', 4.99, 'Hand-cut fries, seasoned with smash seasoning', '', true, '["Hand-Cut Potatoes","Smash Seasoning","Sea Salt"]'],
+    ['item_juicy_poutine', 'Juicy Poutine', 'Sides', 7.99, 'Fries, cheese curds, gravy', '', true, '["Fries","Cheese Curds","Beef Gravy"]'],
+    ['item_quarter_pound_burger', 'Quarter Pound Burger', 'Burgers', 11.99, 'Quarter Pound Beef Patty, Pickles, Onions, Lettuce, Tomatoes, Swiss Cheese', '', true, '["Quarter Pound Beef patty","Pickles","Onions","Tomatoes","Lettuce","Swiss Cheese"]'],
+    ['item_12_chicken_nuggets', '12 Chicken Nuggets', 'Chicken Nuggets', 9.99, 'Chicken Nuggets with side dressing of BBQ Sauce', '', true, '["Chicken Nuggets","BBQ Sauce"]'],
+    ['item_combo_1', 'Combo 1', 'Specials', 14.99, 'Smash Burger/Nuggets + Fries + Any Fruity Tea (Regular size)', '', true, '[]'],
+    ['item_combo_2', 'Combo 2', 'Specials', 16.99, 'Quarter Pound Burger + Fries + Any Fruity Tea (Regular size)', '', true, '[]'],
+    ['item_extra_veggie', 'Extra Veggie', 'Extra', 0.50, '', '', true, '["Onion","Tomatoes","Lettuce","Pickles"]'],
+    ['item_extra_cheese', 'Extra Cheese', 'Extra', 0.80, '', '', true, '["Swiss cheese"]']
   ];
+
   sheet.getRange(2, 1, defaults.length, 8).setValues(defaults);
   getOrCreateSheet('Orders', orderHeaders());
   return { ok: true, seeded: true };

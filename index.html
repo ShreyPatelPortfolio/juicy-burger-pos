@@ -6,7 +6,8 @@
 <title>The Juicy Burger — Select Terminal</title>
 <link rel="stylesheet" href="style.css">
 <style>
-  body { margin: 0; }
+  body { margin: 0; overflow-x: hidden; }
+
   .landing {
     min-height: 100vh;
     display: flex;
@@ -16,82 +17,267 @@
     background: #1a0a00;
     gap: 2.5rem;
     padding: 2rem;
+    position: relative;
+    overflow: hidden;
   }
-  .brand { text-align: center; }
-  .brand .flame { font-size: 4rem; line-height: 1; }
+
+  /* Radial glow behind logo */
+  .landing::before {
+    content: '';
+    position: absolute;
+    top: 20%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(ellipse, rgba(255,107,26,0.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  /* Grid dot pattern */
+  .landing::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(circle, #4a2800 1px, transparent 1px);
+    background-size: 32px 32px;
+    opacity: 0.35;
+    pointer-events: none;
+  }
+
+  .brand { text-align: center; position: relative; z-index: 1; }
+
+  /* SVG Burger illustration */
+  .burger-graphic {
+    width: 110px;
+    height: 110px;
+    margin: 0 auto 1.25rem;
+    display: block;
+    animation: glow-pulse 3s ease-in-out infinite;
+    filter: drop-shadow(0 0 16px rgba(255,107,26,0.5));
+  }
+
   .brand h1 {
     font-family: 'Playfair Display', Georgia, serif;
-    font-size: 2.8rem;
-    color: #ff6b1a;
+    font-size: 3rem;
+    background: linear-gradient(135deg, #ff9d57, #ff6b1a);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
     letter-spacing: -1px;
-    margin: 0.5rem 0 0;
+    margin: 0 0 0.3rem;
     line-height: 1;
   }
+
   .brand p {
     color: #8a6a50;
-    font-size: 0.8rem;
-    letter-spacing: 4px;
+    font-size: 0.78rem;
+    letter-spacing: 5px;
     text-transform: uppercase;
-    margin-top: 0.6rem;
+    margin-top: 0.5rem;
   }
+
+  /* Floating embers */
+  .embers { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 0; }
+  .ember {
+    position: absolute;
+    bottom: -20px;
+    font-size: 0.9rem;
+    animation: float-up linear infinite;
+    opacity: 0;
+  }
+
   .terminal-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
     gap: 1.25rem;
-    max-width: 760px;
+    max-width: 780px;
     width: 100%;
+    position: relative;
+    z-index: 1;
   }
+
   .terminal-card {
-    background: #2a1500;
+    background: linear-gradient(160deg, #2e1800, #1f0e00);
     border: 1px solid #4a2800;
-    border-radius: 16px;
+    border-radius: 20px;
     padding: 2rem 1.5rem;
     text-align: center;
     cursor: pointer;
-    transition: transform 0.15s, border-color 0.15s, background 0.15s;
+    transition: transform 0.2s cubic-bezier(.34,1.56,.64,1), border-color 0.15s, box-shadow 0.2s;
     text-decoration: none;
     display: block;
+    position: relative;
+    overflow: hidden;
   }
-  .terminal-card:hover { background: #3a1f00; border-color: #ff6b1a; transform: translateY(-4px); }
-  .terminal-card .icon { font-size: 2.5rem; margin-bottom: 1rem; }
+  .terminal-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 50% 0%, rgba(255,107,26,0.08), transparent 70%);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .terminal-card:hover { transform: translateY(-6px); border-color: #ff6b1a; box-shadow: 0 12px 40px rgba(255,107,26,0.2); }
+  .terminal-card:hover::before { opacity: 1; }
+
+  .terminal-card .card-icon-wrap {
+    width: 64px; height: 64px;
+    border-radius: 18px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.9rem;
+    margin: 0 auto 1.1rem;
+    position: relative;
+  }
+  .terminal-card.front-card .card-icon-wrap { background: linear-gradient(135deg, #4a1a00, #7a3000); box-shadow: 0 4px 16px rgba(255,107,26,0.2); }
+  .terminal-card.kitchen-card .card-icon-wrap { background: linear-gradient(135deg, #001e3d, #003060); box-shadow: 0 4px 16px rgba(52,152,219,0.2); }
+  .terminal-card.admin-card .card-icon-wrap { background: linear-gradient(135deg, #200030, #3a0055); box-shadow: 0 4px 16px rgba(142,68,173,0.2); }
+
   .terminal-card h2 {
     font-family: 'Playfair Display', Georgia, serif;
     color: #ff9d57;
-    font-size: 1.15rem;
+    font-size: 1.2rem;
     margin: 0 0 0.5rem;
   }
-  .terminal-card p { color: #7a5a3a; font-size: 0.82rem; margin: 0; line-height: 1.5; }
+  .terminal-card p { color: #7a5a3a; font-size: 0.82rem; margin: 0; line-height: 1.55; }
+
   .terminal-card.admin-card { border-style: dashed; }
-  .footer-note { color: #4a3020; font-size: 0.78rem; text-align: center; }
+
+  .divider-line {
+    width: 1px;
+    height: 40px;
+    background: linear-gradient(to bottom, transparent, #4a2800, transparent);
+    position: relative;
+    z-index: 1;
+    display: none;
+  }
+
+  .footer-note {
+    color: #4a3020;
+    font-size: 0.78rem;
+    text-align: center;
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+  .footer-note::before, .footer-note::after {
+    content: '';
+    width: 40px; height: 1px;
+    background: #3a2010;
+  }
+
+  /* Stripe across bottom of card */
+  .card-stripe {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 3px;
+    border-radius: 0 0 20px 20px;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .terminal-card:hover .card-stripe { opacity: 1; }
+  .front-card .card-stripe { background: linear-gradient(90deg, #ff6b1a, #ff9d57); }
+  .kitchen-card .card-stripe { background: linear-gradient(90deg, #3498db, #6db8e8); }
+  .admin-card .card-stripe { background: linear-gradient(90deg, #8e44ad, #b06ed9); }
 </style>
 </head>
 <body>
 <div class="landing">
+  <!-- Floating embers -->
+  <div class="embers" id="embers"></div>
+
   <div class="brand">
-    <div class="flame">🍔</div>
+    <!-- SVG Burger Illustration -->
+    <svg class="burger-graphic" viewBox="0 0 110 110" xmlns="http://www.w3.org/2000/svg">
+      <!-- Glow circle -->
+      <circle cx="55" cy="58" r="42" fill="rgba(255,107,26,0.06)"/>
+
+      <!-- Top bun -->
+      <ellipse cx="55" cy="32" rx="36" ry="10" fill="#8B5E3C"/>
+      <path d="M19 32 Q20 18 55 18 Q90 18 91 32 Z" fill="#C8853F"/>
+      <!-- Sesame seeds -->
+      <ellipse cx="45" cy="22" rx="4" ry="2" fill="#E8A060" transform="rotate(-15 45 22)"/>
+      <ellipse cx="58" cy="19" rx="3.5" ry="1.8" fill="#E8A060" transform="rotate(5 58 19)"/>
+      <ellipse cx="70" cy="23" rx="3.5" ry="1.8" fill="#E8A060" transform="rotate(20 70 23)"/>
+
+      <!-- Cheese slice -->
+      <rect x="18" y="40" width="74" height="7" rx="1" fill="#F5C842"/>
+      <polygon points="18,40 18,47 12,50 12,43" fill="#E0B43A"/>
+      <polygon points="92,40 92,47 98,50 98,43" fill="#E0B43A"/>
+
+      <!-- Patty -->
+      <ellipse cx="55" cy="52" rx="35" ry="8" fill="#5C2E0A"/>
+      <ellipse cx="55" cy="49" rx="35" ry="7" fill="#7A3E12"/>
+      <!-- Patty texture -->
+      <path d="M26 48 Q35 46 44 49 Q53 52 62 49 Q71 46 80 48" stroke="#6B3510" stroke-width="1.5" fill="none" opacity="0.6"/>
+
+      <!-- Lettuce -->
+      <path d="M20 57 Q28 53 36 57 Q44 61 52 57 Q60 53 68 57 Q76 61 84 57 Q90 54 91 57 Q90 63 84 63 Q76 67 68 63 Q60 59 52 63 Q44 67 36 63 Q28 59 20 63 Q19 60 20 57 Z" fill="#4CAF50"/>
+      <path d="M20 57 Q28 53 36 57 Q44 61 52 57 Q60 53 68 57 Q76 61 84 57 Q90 54 91 57" stroke="#388E3C" stroke-width="0.8" fill="none"/>
+
+      <!-- Tomato slices -->
+      <ellipse cx="55" cy="66" rx="28" ry="5" fill="#D32F2F"/>
+      <path d="M27 66 Q35 63 43 66 Q51 69 59 66 Q67 63 75 66 Q80 64 83 66" stroke="#B71C1C" stroke-width="0.8" fill="none"/>
+
+      <!-- Bottom bun -->
+      <ellipse cx="55" cy="76" rx="36" ry="8" fill="#C8853F"/>
+      <ellipse cx="55" cy="80" rx="36" ry="6" fill="#A66A2E"/>
+
+      <!-- Steam wisps -->
+      <path d="M42 14 Q44 8 42 2" stroke="#ff9d57" stroke-width="1.5" fill="none" opacity="0.4" stroke-linecap="round"/>
+      <path d="M55 12 Q57 6 55 0" stroke="#ff9d57" stroke-width="1.5" fill="none" opacity="0.3" stroke-linecap="round"/>
+      <path d="M68 14 Q70 8 68 2" stroke="#ff9d57" stroke-width="1.5" fill="none" opacity="0.4" stroke-linecap="round"/>
+    </svg>
+
     <h1>The Juicy Burger</h1>
     <p>Select Your Terminal</p>
   </div>
 
   <div class="terminal-grid">
-    <a href="front.html" class="terminal-card">
-      <div class="icon">🧾</div>
+    <a href="front.html" class="terminal-card front-card">
+      <div class="card-icon-wrap">🧾</div>
       <h2>Front of House</h2>
       <p>Place orders, customize items &amp; handle payments</p>
+      <div class="card-stripe"></div>
     </a>
-    <a href="kitchen.html" class="terminal-card">
-      <div class="icon">👨‍🍳</div>
+    <a href="kitchen.html" class="terminal-card kitchen-card">
+      <div class="card-icon-wrap">👨‍🍳</div>
       <h2>Kitchen Display</h2>
       <p>View &amp; manage incoming orders in real-time</p>
+      <div class="card-stripe"></div>
     </a>
     <a href="admin.html" class="terminal-card admin-card">
-      <div class="icon">⚙️</div>
+      <div class="card-icon-wrap">⚙️</div>
       <h2>Menu Manager</h2>
       <p>Add, edit &amp; remove menu items &amp; pricing</p>
+      <div class="card-stripe"></div>
     </a>
   </div>
 
   <p class="footer-note">All terminals sync via Google Sheets &bull; No backend server required</p>
 </div>
+
+<script>
+  // Floating ember particles
+  const embers = document.getElementById('embers');
+  const symbols = ['🔥','✦','·','✧','∘'];
+  function spawnEmber() {
+    const el = document.createElement('div');
+    el.className = 'ember';
+    el.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+    el.style.left = Math.random() * 100 + '%';
+    el.style.fontSize = (0.6 + Math.random() * 0.7) + 'rem';
+    el.style.animationDuration = (4 + Math.random() * 5) + 's';
+    el.style.animationDelay = (Math.random() * 2) + 's';
+    el.style.opacity = 0.4 + Math.random() * 0.3;
+    embers.appendChild(el);
+    setTimeout(() => el.remove(), 9000);
+  }
+  setInterval(spawnEmber, 800);
+  // Seed a few immediately
+  for (let i = 0; i < 5; i++) setTimeout(spawnEmber, i * 200);
+</script>
 </body>
 </html>

@@ -11,10 +11,28 @@
 .page-title { font-family: 'Playfair Display', serif; color: var(--brand-amber); font-size: 1.6rem; margin-bottom: 0.2rem; }
 .page-sub { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem; }
 
-.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.75rem; margin-bottom: 1.5rem; }
-.stat-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 1rem; text-align: center; }
-.stat-card .sv { font-size: 1.6rem; font-weight: 700; color: var(--brand-amber); }
-.stat-card .sl { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.2rem; }
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.75rem; margin-bottom: 1.5rem; }
+.stat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 1.1rem 1rem;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.15s;
+}
+.stat-card:hover { border-color: var(--border-light); }
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 2px;
+}
+.stat-card:nth-child(1)::before { background: linear-gradient(90deg, var(--brand-orange), var(--brand-amber)); }
+.stat-card:nth-child(2)::before { background: linear-gradient(90deg, var(--success), #5dde8e); }
+.stat-card:nth-child(3)::before { background: linear-gradient(90deg, var(--info), #6db8e8); }
+.stat-card .sv { font-size: 1.8rem; font-weight: 700; color: var(--brand-amber); line-height: 1; }
+.stat-card .sl { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.3rem; }
 
 .toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; gap: 1rem; flex-wrap: wrap; }
 .search-wrap { flex: 1; max-width: 300px; position: relative; }
@@ -22,23 +40,53 @@
 .search-wrap .form-control { padding-left: 2rem; }
 
 .menu-table { width: 100%; border-collapse: collapse; }
-.menu-table th { text-align: left; font-size: 0.72rem; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--text-dim); padding: 0.6rem 1rem; border-bottom: 1px solid var(--border); }
+.menu-table th {
+  text-align: left; font-size: 0.72rem; font-weight: 600;
+  letter-spacing: 1px; text-transform: uppercase; color: var(--text-dim);
+  padding: 0.6rem 1rem; border-bottom: 1px solid var(--border);
+  background: rgba(0,0,0,0.2);
+}
 .menu-table td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: middle; font-size: 0.875rem; }
 .menu-table tr:last-child td { border-bottom: none; }
-.menu-table tr:hover td { background: rgba(255,107,26,0.03); }
+.menu-table tbody tr { transition: background 0.1s; }
+.menu-table tbody tr:hover td { background: rgba(255,107,26,0.04); }
 
-.item-thumb { width: 50px; height: 50px; border-radius: var(--radius-sm); background: #2a1200; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; overflow: hidden; flex-shrink: 0; }
+.item-thumb {
+  width: 50px; height: 50px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.4rem; overflow: hidden; flex-shrink: 0;
+}
 .item-thumb img { width: 100%; height: 100%; object-fit: cover; border-radius: var(--radius-sm); }
+/* Category-coloured thumb backgrounds */
+.item-thumb.cat-Burgers         { background: linear-gradient(135deg, #3d1800, #5c2500); }
+.item-thumb.cat-Sides           { background: linear-gradient(135deg, #1f2d00, #2e4400); }
+.item-thumb.cat-Drinks          { background: linear-gradient(135deg, #001e3d, #003060); }
+.item-thumb.cat-Desserts        { background: linear-gradient(135deg, #2d001a, #450028); }
+.item-thumb.cat-Specials        { background: linear-gradient(135deg, #2d2500, #443800); }
+.item-thumb.cat-Chicken-Nuggets { background: linear-gradient(135deg, #3a1e00, #5a3200); }
+.item-thumb.cat-Extra           { background: linear-gradient(135deg, #1a1a1a, #2e2e2e); }
+.item-thumb.cat-default         { background: linear-gradient(135deg, #2a1200, #3a1f00); }
+
 .table-name { font-weight: 600; }
 .table-desc { font-size: 0.72rem; color: var(--text-muted); margin-top: 0.15rem; max-width: 260px; }
 .row-actions { display: flex; gap: 0.4rem; justify-content: flex-end; }
 
 .ing-tags { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.5rem; }
-.ing-tag { background: var(--bg-card); border: 1px solid var(--border); border-radius: 20px; padding: 2px 8px; font-size: 0.7rem; color: var(--text-muted); display: flex; align-items: center; gap: 4px; }
+.ing-tag {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 20px; padding: 2px 8px; font-size: 0.7rem; color: var(--text-muted);
+  display: flex; align-items: center; gap: 4px;
+}
 .ing-remove { background: none; border: none; color: var(--danger); font-size: 0.9rem; cursor: pointer; padding: 0; line-height: 1; }
 
-.img-upload-area { border: 2px dashed var(--border); border-radius: var(--radius-md); padding: 1.25rem; text-align: center; cursor: pointer; transition: border-color 0.15s; position: relative; color: var(--text-muted); font-size: 0.85rem; }
-.img-upload-area:hover { border-color: var(--brand-orange); }
+.img-upload-area {
+  border: 2px dashed var(--border); border-radius: var(--radius-md);
+  padding: 1.25rem; text-align: center; cursor: pointer;
+  transition: border-color 0.15s, background 0.15s; position: relative;
+  color: var(--text-muted); font-size: 0.85rem;
+}
+.img-upload-area:hover { border-color: var(--brand-orange); background: rgba(255,107,26,0.04); }
 .img-upload-area input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
 .img-preview { width: 100%; max-height: 150px; object-fit: cover; border-radius: var(--radius-sm); margin-top: 0.75rem; }
 
@@ -54,12 +102,13 @@
     <a href="index.html" class="logo">🍔 The Juicy Burger</a>
     <div style="display:flex;align-items:center;gap:0.75rem;">
       <span class="status-dot online"></span>
+      <span style="font-size:0.78rem;color:var(--text-muted);">Live</span>
       <span class="terminal-label" style="background:#8e44ad;">Menu Manager</span>
     </div>
   </header>
 
   <div class="admin-content">
-    <div class="page-title">Menu Manager</div>
+    <div class="page-title">⚙️ Menu Manager</div>
     <div class="page-sub">Add, edit, or remove items. Changes sync to all terminals instantly.</div>
 
     <div class="stats-grid">
@@ -84,7 +133,7 @@
       <table class="menu-table">
         <thead>
           <tr>
-            <th style="width:62px;"></th>
+            <th style="width:66px;"></th>
             <th>Item</th>
             <th>Category</th>
             <th>Price</th>
@@ -120,6 +169,8 @@
           <option>Drinks</option>
           <option>Desserts</option>
           <option>Specials</option>
+          <option>Chicken Nuggets</option>
+          <option>Extra</option>
           <option value="__new__">+ New category…</option>
         </select>
       </div>
@@ -176,6 +227,17 @@ let editingId = null;
 let currentIngredients = [];
 let currentImageBase64 = '';
 
+// Emoji map for category thumbnails
+const CAT_EMOJI = {
+  'Burgers': '🍔',
+  'Sides': '🍟',
+  'Drinks': '🥤',
+  'Desserts': '🍦',
+  'Specials': '⭐',
+  'Chicken Nuggets': '🍗',
+  'Extra': '➕'
+};
+
 window.addEventListener('DOMContentLoaded', () => {
   initFirebase();
   seedMenuIfEmpty().then(() => {
@@ -196,7 +258,7 @@ function updateStats() {
 }
 
 function populateCatFilter() {
-  const cats = [...new Set(Object.values(menuItems).map(i => i.category))];
+  const cats = [...new Set(Object.values(menuItems).map(i => i.category))].sort();
   const sel  = document.getElementById('catFilter');
   const cur  = sel.value;
   sel.innerHTML = '<option value="">All Categories</option>' + cats.map(c => `<option${c === cur ? ' selected' : ''}>${c}</option>`).join('');
@@ -209,16 +271,24 @@ function renderTable() {
   let items    = Object.values(menuItems);
   if (search) items = items.filter(i => i.name.toLowerCase().includes(search) || (i.description||'').toLowerCase().includes(search));
   if (cat)    items = items.filter(i => i.category === cat);
-  if (!items.length) { body.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-dim);padding:2rem;">No items found</td></tr>'; return; }
+  if (!items.length) {
+    body.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-dim);padding:2rem;">No items found</td></tr>';
+    return;
+  }
   body.innerHTML = items.map(item => {
-    const emoji = { Burgers:'🍔', Sides:'🍟', Drinks:'🥤', Desserts:'🍦', Specials:'⭐' }[item.category] || '🍽️';
+    const emoji = CAT_EMOJI[item.category] || '🍽️';
+    // Build CSS class for colour gradient (spaces → dashes)
+    const catClass = 'cat-' + (item.category || 'default').replace(/\s+/g, '-');
     const thumb = item.image
-      ? `<div class="item-thumb"><img src="${item.image}" alt="" onerror="this.parentElement.innerHTML='${emoji}'"></div>`
-      : `<div class="item-thumb">${emoji}</div>`;
+      ? `<div class="item-thumb ${catClass}"><img src="${item.image}" alt="" onerror="this.parentElement.innerHTML='${emoji}'"></div>`
+      : `<div class="item-thumb ${catClass}">${emoji}</div>`;
     const avail = item.available !== false;
     return `<tr>
       <td>${thumb}</td>
-      <td><div class="table-name">${item.name}</div><div class="table-desc">${item.description || ''}</div></td>
+      <td>
+        <div class="table-name">${item.name}</div>
+        <div class="table-desc">${item.description || ''}</div>
+      </td>
       <td><span class="badge badge-muted">${item.category}</span></td>
       <td style="font-weight:700;color:var(--brand-amber);">${formatCAD(item.price)}</td>
       <td>
@@ -264,14 +334,20 @@ function openEditModal(id) {
   document.getElementById('newCatGroup').classList.add('hidden');
   const catSel = document.getElementById('fieldCategory');
   const exists = [...catSel.options].some(o => o.value === item.category);
-  if (!exists) { const opt = new Option(item.category, item.category); catSel.insertBefore(opt, catSel.lastElementChild); }
+  if (!exists) {
+    const opt = new Option(item.category, item.category);
+    catSel.insertBefore(opt, catSel.lastElementChild);
+  }
   catSel.value = item.category;
   if (item.image) {
     document.getElementById('fieldImageUrl').value = item.image.startsWith('data:') ? '' : item.image;
     document.getElementById('imgPreview').src = item.image;
     document.getElementById('imgPreview').classList.remove('hidden');
     document.getElementById('uploadLabel').style.display = 'none';
-  } else { document.getElementById('fieldImageUrl').value = ''; resetImagePreview(); }
+  } else {
+    document.getElementById('fieldImageUrl').value = '';
+    resetImagePreview();
+  }
   renderIngTags();
   document.getElementById('itemModal').classList.remove('hidden');
 }
@@ -289,6 +365,7 @@ function addIngredient() {
   const val   = input.value.trim();
   if (val && !currentIngredients.includes(val)) { currentIngredients.push(val); renderIngTags(); }
   input.value = '';
+  input.focus();
 }
 
 function removeIngredient(idx) { currentIngredients.splice(idx, 1); renderIngTags(); }
@@ -335,11 +412,11 @@ async function saveItem() {
   const priceStr    = document.getElementById('fieldPrice').value;
   const description = document.getElementById('fieldDesc').value.trim();
   const urlField    = document.getElementById('fieldImageUrl').value.trim();
-  if (!name)                              { showToast('Item name is required', 'error'); return; }
-  if (!category)                          { showToast('Category is required', 'error'); return; }
+  if (!name)                                    { showToast('Item name is required', 'error'); return; }
+  if (!category)                                { showToast('Category is required', 'error'); return; }
   if (!priceStr || isNaN(parseFloat(priceStr))) { showToast('Valid price required', 'error'); return; }
-  const id      = editingId || 'item_' + name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '') + '_' + Date.now().toString().slice(-4);
-  const image   = currentImageBase64 || urlField || '';
+  const id = editingId || 'item_' + name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '') + '_' + Date.now().toString().slice(-4);
+  const image = currentImageBase64 || urlField || '';
   const itemData = {
     id, name, category,
     price: parseFloat(parseFloat(priceStr).toFixed(2)),
@@ -364,7 +441,7 @@ async function deleteItem(id) {
 async function toggleAvailable(id, available) {
   try {
     await DB.update(`menu/${id}`, { ...menuItems[id], available });
-    showToast(available ? 'Item available' : 'Item hidden from menu', '');
+    showToast(available ? 'Item marked available' : 'Item hidden from menu', '');
   } catch(e) { showToast('Error: ' + e.message, 'error'); }
 }
 </script>
